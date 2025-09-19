@@ -62,6 +62,7 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({
         hover:bg-gray-300
         cursor-default
       `}
+      title={getCleanFileName(file.name)}
       >
         {/* PDF Icon */}
         <FileText className={`${config.icon} text-gray-600 flex-shrink-0`} />
@@ -79,11 +80,6 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({
           `}
           >
             {getCleanFileName(file.name)}
-          </div>
-
-          {/* File Size */}
-          <div className="text-xs text-gray-600 leading-tight">
-            {(file.size / 1024 / 1024).toFixed(1)}MB
           </div>
         </div>
       </div>
