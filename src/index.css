@@ -1,0 +1,2415 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+/*---break---*/
+@custom-variant dark (&:is(.dark *));
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+
+/*Puppy animation*/
+
+.puppy-float {
+  animation: puppyFloat 3s ease-in-out infinite;
+}
+
+.puppy-bounce {
+  animation: puppyBounce 2s ease-in-out infinite;
+}
+
+.puppy-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 30;
+  pointer-events: none;
+}
+
+@keyframes puppyFloat {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-15px) rotate(2deg);
+  }
+}
+
+@keyframes puppyBounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0px);
+  }
+  40% {
+    transform: translateY(-10px);
+  }
+  60% {
+    transform: translateY(-5px);
+  }
+}
+
+/* ==========================================
+   Design Preview Component Classes
+   ========================================== */
+
+/* Color Swatch Component */
+.color-swatch-container {
+  @apply cursor-pointer p-3 bg-slate-100 rounded-lg border border-slate-300 hover:border-slate-400 transition-all duration-200;
+}
+
+.color-swatch-size-small {
+  @apply w-8 h-8;
+}
+
+.color-swatch-size-medium {
+  @apply w-12 h-12;
+}
+
+.color-swatch-size-large {
+  @apply w-16 h-16;
+}
+
+.color-swatch-display {
+  @apply rounded-md border-2 border-white/20 mb-2 relative overflow-hidden mx-auto;
+}
+
+.color-swatch-overlay {
+  @apply absolute inset-0 bg-gradient-to-br from-transparent to-black/10;
+}
+
+.color-swatch-content {
+  @apply text-center;
+}
+
+.color-swatch-name {
+  @apply font-medium text-slate-800 capitalize text-xs mb-1;
+}
+
+.color-swatch-hex {
+  @apply text-slate-600 font-mono text-xs;
+}
+
+.color-swatch-icon-container {
+  @apply flex items-center justify-center mt-1;
+}
+
+.color-swatch-icon-copied {
+  @apply w-3 h-3 text-green-600;
+}
+
+.color-swatch-icon-default {
+  @apply w-3 h-3 text-slate-500 transition-colors;
+}
+
+/* Device Preview Component */
+.device-preview-mobile {
+  @apply w-48 h-72 mx-auto;
+}
+
+.device-preview-tablet {
+  @apply w-64 h-80 mx-auto;
+}
+
+.device-preview-desktop {
+  @apply w-full h-64;
+}
+
+.device-preview-container {
+  @apply relative bg-white rounded-lg overflow-hidden shadow-xl border border-slate-300;
+}
+
+.device-preview-header {
+  @apply h-10 flex items-center px-3;
+}
+
+.device-preview-header-content {
+  @apply flex items-center gap-2;
+}
+
+.device-preview-logo {
+  @apply w-6 h-6 rounded bg-white/20 flex items-center justify-center;
+}
+
+.device-preview-logo-icon {
+  @apply w-3 h-3 text-white;
+}
+
+.device-preview-title {
+  @apply text-white;
+}
+
+.device-preview-title-text {
+  @apply font-medium text-xs;
+}
+
+.device-preview-controls {
+  @apply ml-auto flex items-center gap-1;
+}
+
+.device-preview-control {
+  @apply w-4 h-4 bg-white/20 rounded-sm;
+}
+
+.device-preview-nav {
+  @apply h-8 bg-white border-b border-gray-200 flex items-center px-3;
+}
+
+.device-preview-nav-items {
+  @apply flex gap-3;
+}
+
+.device-preview-nav-active {
+  @apply px-2 py-1 rounded text-xs font-medium;
+}
+
+.device-preview-nav-inactive {
+  @apply px-2 py-1 text-xs text-gray-600;
+}
+
+.device-preview-content {
+  @apply flex-1 p-3 space-y-3;
+}
+
+.device-preview-hero {
+  @apply space-y-2;
+}
+
+.device-preview-hero-title {
+  @apply h-4 rounded;
+}
+
+.device-preview-hero-text {
+  @apply h-2 bg-gray-300 rounded;
+}
+
+.device-preview-cards {
+  @apply grid grid-cols-2 gap-2;
+}
+
+.device-preview-card {
+  @apply bg-white p-2 rounded shadow-sm border;
+}
+
+.device-preview-card-image {
+  @apply w-full h-8 rounded mb-1;
+}
+
+.device-preview-card-text {
+  @apply h-2 bg-gray-200 rounded mb-1;
+}
+
+.device-preview-buttons {
+  @apply flex gap-2;
+}
+
+.device-preview-button-primary {
+  @apply px-3 py-1 rounded font-medium text-white text-xs;
+}
+
+.device-preview-button-secondary {
+  @apply px-3 py-1 rounded font-medium text-xs border;
+}
+
+.device-preview-features {
+  @apply space-y-1;
+}
+
+.device-preview-feature {
+  @apply flex items-center gap-2;
+}
+
+.device-preview-feature-dot {
+  @apply w-1.5 h-1.5 rounded-full;
+}
+
+.device-preview-feature-text {
+  @apply text-xs;
+}
+
+/* Modal and Layout */
+.design-preview-modal-overlay {
+  @apply fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4;
+}
+
+.design-preview-modal-container {
+  @apply bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl border border-slate-300/50 w-full max-w-6xl max-h-[90vh] overflow-hidden shadow-2xl;
+}
+
+.design-preview-modal-header {
+  @apply flex items-center justify-between p-6 border-b border-slate-300/50;
+}
+
+.design-preview-modal-header-left {
+  @apply flex items-center gap-3;
+}
+
+.design-preview-modal-icon-container {
+  @apply p-2 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-lg;
+}
+
+.design-preview-modal-icon {
+  @apply w-5 h-5 text-blue-600;
+}
+
+.design-preview-modal-title {
+  @apply text-xl font-bold text-slate-800;
+}
+
+.design-preview-modal-subtitle {
+  @apply text-sm text-slate-600;
+}
+
+.design-preview-modal-close {
+  @apply p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 rounded-lg transition-colors;
+}
+
+.design-preview-modal-close-icon {
+  @apply w-5 h-5;
+}
+
+.design-preview-content-container {
+  @apply overflow-y-auto max-h-[calc(90vh-88px)];
+}
+
+.design-preview-content {
+  @apply p-6 space-y-8;
+}
+
+/* Stats Grid */
+.design-preview-stats-grid {
+  @apply grid grid-cols-2 lg:grid-cols-4 gap-4;
+}
+
+.design-preview-stat-card {
+  @apply bg-slate-200/50 p-4 rounded-xl border border-slate-300/50;
+}
+
+.design-preview-stat-content {
+  @apply flex items-center gap-3;
+}
+
+.design-preview-stat-icon-container {
+  @apply p-2 bg-slate-300/50 rounded-lg;
+}
+
+.design-preview-stat-icon-blue {
+  @apply w-4 h-4 text-blue-600;
+}
+
+.design-preview-stat-icon-green {
+  @apply w-4 h-4 text-green-600;
+}
+
+.design-preview-stat-icon-purple {
+  @apply w-4 h-4 text-purple-600;
+}
+
+.design-preview-stat-icon-yellow {
+  @apply w-4 h-4 text-yellow-600;
+}
+
+.design-preview-stat-value {
+  @apply text-2xl font-bold text-slate-800;
+}
+
+.design-preview-stat-label {
+  @apply text-xs text-slate-600;
+}
+
+/* Main Content Grid */
+.design-preview-main-grid {
+  @apply grid grid-cols-1 lg:grid-cols-2 gap-8;
+}
+
+/* Color Palette Section */
+.design-preview-section-title {
+  @apply text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2;
+}
+
+.design-preview-color-grid {
+  @apply grid grid-cols-2 sm:grid-cols-3 gap-4;
+}
+
+.design-preview-no-colors {
+  @apply text-slate-600 text-sm;
+}
+
+.design-preview-color-explanation {
+  @apply mt-4 p-3 bg-slate-200/30 rounded-lg border border-slate-300/50;
+}
+
+.design-preview-color-explanation-label {
+  @apply text-sm text-slate-600 mb-1;
+}
+
+.design-preview-color-explanation-text {
+  @apply text-slate-800 text-xs leading-relaxed;
+}
+
+/* Design Details Section */
+.design-preview-details-container {
+  @apply space-y-4;
+}
+
+.design-preview-detail-item {
+  @apply p-3 bg-slate-200/30 rounded-lg border border-slate-300/50;
+}
+
+.design-preview-detail-label {
+  @apply text-sm text-slate-600 mb-1;
+}
+
+.design-preview-detail-value {
+  @apply text-slate-800 font-medium;
+}
+
+.design-preview-detail-text {
+  @apply text-slate-800 text-xs leading-relaxed;
+}
+
+/* Layout Options Section */
+.design-preview-layout-grid {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3;
+}
+
+.design-preview-layout-item {
+  @apply p-3 rounded-lg border transition-all duration-200;
+}
+
+.design-preview-layout-item-recommended {
+  @apply bg-blue-500/20 border-blue-500/30 text-blue-700;
+}
+
+.design-preview-layout-item-default {
+  @apply bg-slate-200/30 border-slate-300/50 text-slate-800;
+}
+
+.design-preview-layout-text {
+  @apply text-sm;
+}
+
+.design-preview-layout-recommended-label {
+  @apply mt-1;
+}
+
+.design-preview-layout-recommended-text {
+  @apply text-xs text-blue-600;
+}
+
+/* Features/Sections */
+.design-preview-features-grid {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3;
+}
+
+.design-preview-feature-item {
+  @apply flex items-center gap-3 p-3 bg-slate-200/30 rounded-lg border border-slate-300/50;
+}
+
+.design-preview-feature-dot-small {
+  @apply w-2 h-2 rounded-full;
+}
+
+.design-preview-feature-text-small {
+  @apply text-sm text-slate-800;
+}
+
+/* Device Preview Section */
+.design-preview-device-header {
+  @apply flex items-center justify-between mb-6;
+}
+
+.design-preview-device-selector {
+  @apply flex items-center gap-1 p-1 bg-slate-200/50 rounded-lg border border-slate-300/50;
+}
+
+.design-preview-device-button {
+  @apply flex items-center gap-2 px-3 py-2 rounded-md transition-all duration-200;
+}
+
+.design-preview-device-button-active {
+  @apply bg-blue-600 text-white;
+}
+
+.design-preview-device-button-inactive {
+  @apply text-slate-600 hover:text-slate-800 hover:bg-slate-300/50;
+}
+
+.design-preview-device-button-icon {
+  @apply w-4 h-4;
+}
+
+.design-preview-device-button-text {
+  @apply text-sm hidden sm:inline;
+}
+
+.design-preview-device-container {
+  @apply bg-gradient-to-br from-slate-200/30 to-slate-300/30 p-8 rounded-xl border border-slate-300/50;
+}
+
+/* ==========================================
+   Semantic Design Tokens (utilities via @apply)
+   ========================================== */
+
+/* Background tokens */
+.bg-app {
+  @apply bg-gradient-to-br from-slate-50 to-slate-100;
+}
+.bg-surface {
+  @apply bg-white;
+}
+.bg-surface-weak {
+  @apply bg-white/80;
+}
+.bg-surface-overlay {
+  @apply bg-white/95;
+}
+.bg-subtle {
+  @apply bg-slate-50;
+}
+.bg-subtle-50 {
+  @apply bg-slate-50/50;
+}
+.bg-neutral-tile {
+  @apply bg-slate-200;
+}
+.bg-neutral-300 {
+  @apply bg-gray-300;
+}
+.bg-track {
+  @apply bg-slate-300;
+}
+.bg-primary {
+  @apply bg-blue-500;
+}
+.bg-primary-ghost {
+  @apply bg-blue-500/20;
+}
+.bg-primary-weak {
+  @apply bg-blue-400;
+}
+.bg-primary-subtle {
+  @apply bg-blue-100;
+}
+
+/* Brand and status helpers */
+.bg-success {
+  @apply bg-green-600;
+}
+.border-primary-strong {
+  @apply border-blue-500;
+}
+
+/* Text tokens */
+.text-primary {
+  @apply text-blue-600;
+}
+.text-primary-weak {
+  @apply text-blue-400;
+}
+.text-success {
+  @apply text-green-600;
+}
+.text-success-weak {
+  @apply text-green-400;
+}
+.text-danger {
+  @apply text-red-600;
+}
+.text-danger-weak {
+  @apply text-red-400;
+}
+.text-strong {
+  @apply text-slate-900;
+}
+.text-body {
+  @apply text-slate-700;
+}
+.text-muted {
+  @apply text-slate-600;
+}
+
+/* Border tokens */
+.border-default {
+  @apply border-slate-200;
+}
+.border-default-weak {
+  @apply border-slate-200/50;
+}
+.border-strong {
+  @apply border-slate-600/50;
+}
+.border-success {
+  @apply border-green-200;
+}
+.border-danger {
+  @apply border-red-200;
+}
+
+/* Status dot tokens */
+.bg-status-offline {
+  @apply bg-red-500;
+}
+.bg-status-busy {
+  @apply bg-blue-500 animate-pulse;
+}
+.bg-status-deploying {
+  @apply bg-green-500 animate-pulse;
+}
+.bg-status-ready {
+  @apply bg-green-500;
+}
+.bg-status-loading {
+  @apply bg-yellow-500;
+}
+.bg-status-error {
+  @apply bg-red-500;
+}
+.bg-status-idle {
+  @apply bg-gray-500;
+}
+
+/* Elevation/containers */
+.header-bar {
+  @apply bg-white/80 backdrop-blur-sm border-b border-slate-200/50 h-12 flex items-center px-3 z-40 relative;
+}
+
+/* Publish dropdown panel */
+.publish-dropdown {
+  @apply fixed top-12 right-3 w-80 bg-white rounded-lg shadow-lg border border-slate-200/60 overflow-hidden;
+  z-index: 50;
+}
+.publish-dropdown-content {
+  @apply p-4 flex flex-col gap-3;
+}
+.publish-overlay {
+  @apply fixed inset-0 z-40 bg-transparent;
+}
+.publish-dropdown-title {
+  @apply text-sm font-semibold text-slate-900;
+}
+.publish-dropdown-desc {
+  @apply text-xs text-slate-600 leading-relaxed;
+}
+.publish-preview {
+  @apply mt-1 p-3 rounded-md bg-slate-50 border border-slate-200 flex items-start gap-2;
+}
+.publish-preview-title {
+  @apply text-xs font-semibold text-slate-800 mb-1;
+}
+.publish-preview-link {
+  @apply text-xs text-slate-900 underline break-all;
+}
+.btn-publish-primary {
+  background-color: #bd906b;
+  color: #ffffff;
+  font-weight: 700;
+}
+.btn-publish-primary:hover {
+  background-color: #a77e5e;
+}
+.btn-publish-primary:disabled {
+  background-color: #9ca3af;
+  color: #6b7280;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.btn-publish-primary {
+  @apply inline-flex items-center justify-center h-8 px-3 rounded-md transition-colors duration-150;
+}
+
+/* Animations */
+.fade-slide-in {
+  animation: fadeSlideIn 180ms ease-out forwards;
+}
+.fade-slide-out {
+  animation: fadeSlideOut 150ms ease-in forwards;
+}
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeSlideOut {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-6px); }
+}
+.sidebar {
+  @apply w-1/4 flex flex-col border-r border-slate-200/50 h-screen;
+}
+
+.chat-layout {
+  @apply h-screen flex overflow-hidden;
+}
+.panel {
+  @apply bg-white rounded-lg shadow;
+}
+.panel-elevated {
+  @apply bg-white rounded-lg shadow-2xl;
+}
+.card {
+  @apply bg-white border border-slate-200 rounded-lg;
+}
+.stream-panel {
+  @apply p-3 rounded-lg border border-slate-600/50;
+}
+.stream-panel-gradient {
+  @apply bg-gradient-to-r from-slate-800/80 to-slate-700/80;
+}
+
+/* Alerts */
+.alert {
+  @apply rounded-lg border p-3;
+}
+.alert-success {
+  @apply bg-green-50 border-green-200;
+}
+.alert-error {
+  @apply bg-red-50 border-red-200;
+}
+
+/* Buttons */
+.btn {
+  @apply inline-flex items-center gap-1 px-3 py-1 rounded text-base font-medium transition-colors;
+}
+.btn-primary {
+  @apply bg-blue-600 hover:bg-blue-700 text-white;
+}
+.btn-success {
+  @apply bg-green-600 hover:bg-green-700 text-white;
+}
+.btn-soft-success {
+  @apply bg-green-500/20 text-green-400 cursor-default;
+}
+.btn-disabled {
+  @apply bg-gray-300 text-slate-600 cursor-not-allowed;
+}
+.btn-neutral {
+  @apply p-1.5 bg-slate-100 hover:bg-slate-200 disabled:bg-slate-50 disabled:cursor-not-allowed rounded-lg transition-colors duration-200 border border-slate-600/50;
+}
+.icon-btn {
+  @apply p-1.5 text-slate-600 hover:text-slate-800 transition-colors;
+}
+.icon-btn-primary {
+  @apply p-1.5 text-blue-400 hover:text-blue-300 transition-colors;
+}
+.icon-btn-danger {
+  @apply p-1.5 text-gray-600 hover:text-gray-400 transition-colors;
+}
+
+/* Inputs */
+.input {
+  @apply w-full bg-white border border-slate-200 rounded-xl text-slate-900 p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-all duration-200 placeholder:text-slate-600 text-sm shadow-sm;
+}
+
+/* Dropdown/Menu */
+.dropdown {
+  @apply bg-white backdrop-blur-sm border border-slate-200 shadow-lg rounded-lg;
+  z-index: 9999;
+  position: absolute;
+}
+.menu-item {
+  @apply w-full px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors flex items-center gap-2;
+}
+
+/* Message bubbles */
+.message-user {
+  @apply px-4 py-2 rounded-lg bg-[#ebebeb] max-w-sm;
+}
+.message-assistant {
+  @apply px-4 py-2 rounded-lg w-full;
+}
+
+/* Chat messages container with custom scrollbar */
+.chat-messages-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-messages-container::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.chat-messages-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.chat-messages-container::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Firefox scrollbar styling */
+.chat-messages-container {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+/* Ensure minimal spacing between messages */
+.chat-messages-container > div:not(:last-child) {
+  margin-bottom: 0.5rem;
+}
+
+/* Additional message spacing control */
+.chat-messages-container .message-user,
+.chat-messages-container .message-assistant {
+  margin-bottom: 0.25rem;
+}
+
+/* Markdown content helpers */
+.md-link {
+  @apply text-blue-400 hover:text-blue-300 underline;
+}
+.md-strong {
+  @apply font-semibold text-slate-900;
+}
+.md-h1 {
+  @apply text-lg font-bold text-slate-900 mb-2;
+}
+.md-h2 {
+  @apply text-base font-semibold text-slate-900 mb-1;
+}
+.code-inline {
+  @apply bg-slate-100 px-1 py-0.5 rounded text-sm font-mono;
+}
+.code-block {
+  @apply block bg-slate-100 p-2 rounded text-sm font-mono overflow-x-auto;
+}
+.blockquote {
+  @apply border-l-4 border-slate-300 pl-4 italic text-slate-600;
+}
+
+/* Banners */
+.banner-error {
+  @apply bg-red-50 border-b border-red-200 p-3;
+}
+
+/* Soft buttons */
+.btn-danger-soft {
+  @apply bg-red-500/20 hover:bg-red-500/30 text-red-700 text-xs rounded transition-colors disabled:opacity-50 px-3 py-1;
+}
+
+/* Overlays */
+.overlay-muted {
+  @apply bg-white/5 backdrop-blur-[1px];
+}
+.overlay-surface-80 {
+  @apply bg-white/80 backdrop-blur-sm;
+}
+.overlay-surface-50 {
+  @apply bg-white/50 backdrop-blur-sm;
+}
+.bg-surface-60 {
+  @apply bg-white/60;
+}
+.bg-surface-ghost {
+  @apply bg-white/30;
+}
+
+/* Placeholder backgrounds */
+.bg-placeholder {
+  @apply bg-gray-50;
+}
+
+/* Icon/Chip helpers */
+.btn-circle-danger {
+  @apply w-4 h-4 bg-red-500 text-white rounded-full text-[13px] flex items-center justify-center;
+}
+
+/* Tiles */
+.bg-tile {
+  @apply bg-slate-700;
+}
+
+/* Links */
+.link-primary {
+  @apply text-blue-400 hover:text-blue-300 underline;
+}
+.link-success {
+  @apply text-green-300 hover:text-green-200 underline;
+}
+
+/* Foreground tokens */
+.text-on-solid {
+  @apply text-white;
+}
+
+/* Step/status helpers */
+.bg-step-active {
+  @apply bg-blue-50 border border-blue-200;
+}
+.bg-step-success {
+  @apply bg-green-50 border border-green-200;
+}
+.bg-step-error {
+  @apply bg-red-50 border border-red-200;
+}
+.bg-step-default {
+  @apply bg-gray-50 border border-gray-200;
+}
+
+/* ==========================================
+   Light Mode Theme Classes for Index.tsx
+   ========================================== */
+
+/* Main layout and containers */
+.page-container {
+  @apply bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200 min-h-screen min-w-full flex flex-col items-center justify-center relative overflow-hidden;
+}
+
+.page-content {
+  @apply w-full max-w-7xl mx-auto px-6 py-8 relative z-10;
+}
+
+/* Header and navigation */
+.header-container {
+  @apply absolute top-6 right-6 z-20 flex items-center gap-4;
+}
+
+.back-button {
+  @apply flex items-center gap-2 px-3 py-2 bg-white/80 hover:bg-white text-slate-700 rounded-lg border border-slate-300 transition-all duration-200 shadow-sm;
+}
+
+.config-button {
+  @apply flex items-center gap-2 px-3 py-2 bg-orange-500/20 hover:bg-orange-500/30 text-orange-700 rounded-lg border border-orange-300 transition-all duration-200;
+}
+
+/* Main content sections */
+.main-title {
+  @apply text-4xl md:text-5xl lg:text-6xl font-bold text-slate-800 mb-4 text-center;
+}
+
+.subtitle {
+  @apply text-lg md:text-xl text-slate-600 mb-8 text-center max-w-3xl mx-auto;
+}
+
+.section-title {
+  @apply text-2xl font-semibold text-slate-800 mb-6;
+}
+
+.section-subtitle {
+  @apply text-slate-600 text-sm;
+}
+
+/* Project cards */
+.project-card {
+  @apply cursor-pointer relative overflow-hidden mb-10;
+}
+
+.project-thumbnail {
+  @apply w-full bg-slate-200 rounded-lg mb-3 overflow-hidden relative;
+  aspect-ratio: 16 / 9; /* keep consistent preview shape */
+}
+
+.project-thumbnail img {
+  @apply w-full h-full object-cover;
+}
+
+.project-thumbnail-placeholder {
+  @apply w-full h-full flex items-center justify-center;
+}
+
+.project-thumbnail-icon {
+  @apply w-8 h-8 text-slate-500;
+}
+
+.project-overlay {
+  @apply absolute inset-0 bg-black/20 opacity-0 transition-opacity duration-200 flex items-center justify-center gap-2;
+}
+
+.project-overlay-text {
+  @apply text-white bg-black text-sm font-medium px-2 py-1 rounded-4xl;
+}
+
+.project-info {
+  @apply relative space-y-2;
+}
+
+.project-title {
+  @apply text-slate-800 font-medium text-sm truncate flex-1;
+}
+
+.project-delete-button {
+  @apply opacity-0 transition-opacity duration-200 p-1 hover:bg-red-500/20 rounded;
+}
+
+/* Alternative approach using direct CSS selector if the group:hover doesn't work */
+.group:hover .project-delete-button {
+  opacity: 1;
+}
+
+.project-delete-icon {
+  @apply w-4 h-4 text-red-500;
+}
+
+/* Status badges */
+.status-badge {
+  @apply px-2 py-1 text-xs rounded-full font-medium backdrop-blur-sm;
+}
+
+.status-ready {
+  /* @apply bg-green-200/100 text-green-700 border border-green-300; */
+  @apply bg-green-200/50 text-green-700 border border-green-300; 
+  /* For transparent status badges of Projects */
+}
+
+.status-building {
+  @apply bg-yellow-500/20 text-yellow-700 border border-yellow-300;
+}
+
+.status-error {
+  @apply bg-red-500/20 text-red-700 border border-red-300;
+}
+
+.status-default {
+  @apply bg-slate-500/20 text-slate-700 border border-slate-300;
+}
+
+/* Activity indicators */
+.activity-indicator {
+  @apply w-3 h-3 rounded-full;
+}
+
+.activity-active {
+  @apply bg-blue-500 animate-pulse;
+}
+
+.activity-legacy {
+  @apply bg-yellow-500;
+}
+
+/* Color indicators */
+.color-indicator {
+  @apply w-3 h-3 rounded-full border border-white/50;
+}
+
+.color-indicator-small {
+  @apply w-3 h-3 rounded-full border border-white/20;
+}
+
+/* Design info */
+.design-info {
+  @apply text-xs space-y-1;
+}
+
+.design-info-item {
+  @apply text-slate-600;
+}
+
+.design-info-label {
+  @apply text-slate-500;
+}
+
+.design-colors-container {
+  @apply flex items-center gap-1;
+}
+
+.design-colors-label {
+  @apply text-slate-500;
+}
+
+.design-colors-list {
+  @apply flex gap-1;
+}
+
+/* Session info */
+.session-info {
+  @apply flex items-center gap-2 p-2 rounded-lg;
+}
+
+.session-info-active {
+  @apply bg-blue-500/10 border border-blue-300;
+}
+
+.session-info-legacy {
+  @apply bg-yellow-500/10 border border-yellow-300;
+}
+
+.session-icon {
+  @apply w-3 h-3;
+}
+
+.session-icon-active {
+  @apply text-blue-500;
+}
+
+.session-icon-legacy {
+  @apply text-yellow-500;
+}
+
+.session-text {
+  @apply text-xs;
+}
+
+.session-text-active {
+  @apply text-blue-600;
+}
+
+.session-text-legacy {
+  @apply text-yellow-600;
+}
+
+.session-continue-button {
+  @apply text-xs underline ml-auto;
+}
+
+.session-continue-active {
+  @apply text-blue-600 hover:text-blue-500;
+}
+
+.session-continue-legacy {
+  @apply text-yellow-600 hover:text-yellow-500;
+}
+
+/* Workflow sections */
+.workflow-container {
+  @apply w-full max-w-6xl mx-auto;
+}
+
+.workflow-grid {
+  @apply grid lg:grid-cols-3 gap-8;
+}
+
+.workflow-chat-section {
+  @apply lg:col-span-2;
+}
+
+.workflow-preview-section {
+  @apply lg:col-span-1;
+}
+
+.workflow-header {
+  @apply flex items-center justify-between mb-6;
+}
+
+.workflow-title {
+  @apply text-xl font-semibold text-slate-800;
+}
+
+.workflow-status {
+  @apply text-slate-600 text-sm;
+}
+
+.workflow-messages {
+  @apply space-y-4 max-h-96 overflow-y-auto p-4 bg-white border border-slate-200;
+}
+
+.workflow-input-section {
+  @apply p-4 border-t border-slate-300;
+}
+
+/* Buttons */
+.btn-primary-large {
+  @apply w-full px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2;
+}
+
+.btn-secondary-large {
+  @apply w-full px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2;
+}
+
+.btn-main-action {
+  @apply w-full px-7 rounded-lg py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium flex items-center justify-center gap-2;
+}
+
+.btn-signin {
+  @apply px-8 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors duration-200;
+}
+
+.btn-configure {
+  @apply px-4 py-2 bg-orange-500/20 hover:bg-orange-500/30 text-orange-700 rounded-lg transition-colors text-sm;
+}
+
+/* Progress indicators */
+.progress-container {
+  @apply mt-6 p-4 bg-gradient-to-br from-slate-100 to-slate-200 rounded-xl border border-slate-300;
+}
+
+.progress-title {
+  @apply text-sm font-medium text-slate-800 mb-3 flex items-center gap-2;
+}
+
+.progress-icon {
+  @apply w-4 h-4 text-purple-600;
+}
+
+.progress-steps {
+  @apply space-y-2;
+}
+
+.progress-step {
+  @apply flex items-center gap-2 text-sm;
+}
+
+.progress-step-active {
+  @apply text-blue-600;
+}
+
+.progress-step-complete {
+  @apply text-green-600;
+}
+
+.progress-step-default {
+  @apply text-slate-500;
+}
+
+.progress-dot {
+  @apply w-2 h-2 rounded-full;
+}
+
+.progress-dot-active {
+  @apply bg-blue-600;
+}
+
+.progress-dot-complete {
+  @apply bg-green-600;
+}
+
+.progress-dot-default {
+  @apply bg-slate-400;
+}
+
+/* Form elements */
+.form-section {
+  @apply flex flex-col items-center mb-12;
+}
+
+.form-container {
+  @apply w-full max-w-4xl;
+}
+
+.image-upload-section {
+  @apply mb-6;
+}
+
+.image-upload-label {
+  @apply block text-sm font-medium text-slate-700 mb-3;
+}
+
+.image-upload-input {
+  @apply hidden;
+}
+
+.image-upload-area {
+  @apply flex items-center justify-center w-full p-6 border-2 border-dashed rounded-lg transition-all duration-300 cursor-pointer;
+}
+
+.image-upload-area-enabled {
+  @apply border-slate-400 hover:border-slate-500 bg-slate-50 hover:bg-slate-100;
+}
+
+.image-upload-area-disabled {
+  @apply border-slate-300 bg-slate-50 cursor-not-allowed;
+}
+
+.image-upload-content {
+  @apply text-center;
+}
+
+.image-upload-icon {
+  @apply w-8 h-8 text-slate-500 mx-auto mb-2;
+}
+
+.image-upload-text {
+  @apply text-sm text-slate-600;
+}
+
+.image-upload-hint {
+  @apply text-xs text-slate-500 mt-1;
+}
+
+.image-preview-container {
+  @apply mt-4 flex flex-wrap gap-2;
+}
+
+.image-preview-item {
+  @apply relative w-16 h-16 bg-slate-200 rounded-lg overflow-visible;
+}
+
+.image-preview-remove {
+  @apply absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-[13px] flex items-center justify-center hover:bg-red-600 transition-colors overflow-visible;
+}
+
+.textarea-main {
+  @apply mb-4 border-2 focus:outline-0 border-slate-400 rounded-lg text-slate-800 p-4 w-full h-36 bg-white backdrop-blur-sm transition-all duration-300 placeholder-slate-500 resize-none shadow-sm;
+}
+
+/* Projects section */
+.projects-section {
+  @apply w-full;
+}
+
+.projects-header {
+  @apply flex items-center justify-between mb-6;
+}
+
+.projects-title {
+  @apply text-2xl font-semibold text-slate-800;
+}
+
+.projects-stats {
+  @apply text-right;
+}
+
+.projects-stats-main {
+  @apply text-slate-600 text-sm;
+}
+
+.projects-stats-sub {
+  @apply text-slate-500 text-xs;
+}
+
+.projects-grid {
+  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6;
+}
+
+.projects-loading {
+  @apply flex items-center justify-center py-12;
+}
+
+.projects-loading-icon {
+  @apply w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full;
+}
+
+.projects-sessions-loading {
+  @apply flex items-center justify-center mt-4;
+}
+
+.projects-sessions-loading-icon {
+  @apply w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full mr-2;
+}
+
+.projects-sessions-loading-text {
+  @apply text-slate-600 text-sm;
+}
+
+.projects-empty {
+  @apply text-center py-12;
+}
+
+.projects-empty-icon {
+  @apply w-16 h-16 text-slate-400 mx-auto mb-4;
+}
+
+.projects-empty-title {
+  @apply text-xl font-medium text-slate-800 mb-2;
+}
+
+.projects-empty-text {
+  @apply text-slate-600 mb-4;
+}
+
+/* Signed out section */
+.signed-out-container {
+  @apply text-center;
+}
+
+.signed-out-text {
+  @apply text-slate-600 mb-4;
+}
+
+/* Animated background */
+.animated-background {
+  @apply absolute inset-0 overflow-hidden;
+}
+
+.animated-particle {
+  @apply absolute w-1 h-1 bg-blue-500/20 rounded-full;
+}
+
+/* Loading animations */
+.loading-spinner {
+  @apply w-4 h-4 border-2 border-white border-t-transparent rounded-full;
+}
+
+.loading-spinner-blue {
+  @apply w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full;
+}
+
+/* Preview buttons */
+.preview-button {
+  @apply px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2;
+}
+
+/* Modal overlays */
+.modal-overlay {
+  @apply fixed inset-0 bg-black/50 backdrop-blur-sm z-50;
+}
+
+/* Responsive utilities */
+.responsive-container {
+  @apply w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+/* Focus states */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+}
+
+/* Hover effects */
+.hover-lift {
+  @apply transition-transform duration-200 hover:scale-105;
+}
+
+.hover-lift-small {
+  @apply transition-transform duration-200 hover:scale-102;
+}
+
+/* Shadow utilities */
+.shadow-soft {
+  @apply shadow-sm;
+}
+
+.shadow-medium {
+  @apply shadow;
+}
+
+.shadow-strong {
+  @apply shadow-lg;
+}
+
+/* Border utilities */
+.border-soft {
+  @apply border border-slate-200;
+}
+
+.border-medium {
+  @apply border border-slate-300;
+}
+
+.border-strong {
+  @apply border border-slate-400;
+}
+
+/* Text utilities */
+.text-primary-light {
+  @apply text-slate-800;
+}
+
+.text-secondary-light {
+  @apply text-slate-600;
+}
+
+.text-muted-light {
+  @apply text-slate-500;
+}
+
+.text-disabled-light {
+  @apply text-slate-400;
+}
+
+/* Background utilities */
+.bg-primary-light {
+  @apply bg-white;
+}
+
+.bg-secondary-light {
+  @apply bg-slate-50;
+}
+
+.bg-tertiary-light {
+  @apply bg-slate-100;
+}
+
+.bg-overlay-light {
+  @apply bg-white/80 backdrop-blur-sm;
+}
+
+/* Gradient utilities */
+.gradient-primary {
+  @apply bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200;
+}
+
+.gradient-secondary {
+  @apply bg-gradient-to-r from-blue-500 to-purple-600;
+}
+
+.gradient-success {
+  @apply bg-gradient-to-r from-green-600 to-emerald-600;
+}
+
+/* Animation utilities */
+.animate-float {
+  @apply animate-pulse;
+}
+
+.animate-spin-slow {
+  @apply animate-spin;
+}
+
+/* Layout utilities */
+.flex-center {
+  @apply flex items-center justify-center;
+}
+
+.flex-between {
+  @apply flex items-center justify-between;
+}
+
+.flex-start {
+  @apply flex items-center justify-start;
+}
+
+.flex-end {
+  @apply flex items-center justify-end;
+}
+
+/* Spacing utilities */
+.space-y-soft {
+  @apply space-y-2;
+}
+
+.space-y-medium {
+  @apply space-y-4;
+}
+
+.space-y-large {
+  @apply space-y-6;
+}
+
+.gap-soft {
+  @apply gap-2;
+}
+
+.gap-medium {
+  @apply gap-4;
+}
+
+.gap-large {
+  @apply gap-6;
+}
+
+/* Size utilities */
+.size-icon-small {
+  @apply w-4 h-4;
+}
+
+.size-icon-medium {
+  @apply w-5 h-5;
+}
+
+.size-icon-large {
+  @apply w-6 h-6;
+}
+
+.size-icon-xl {
+  @apply w-8 h-8;
+}
+
+.size-icon-2xl {
+  @apply w-12 h-12;
+}
+
+.size-icon-3xl {
+  @apply w-16 h-16;
+}
+
+/* Position utilities */
+.absolute-center {
+  @apply absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2;
+}
+
+.absolute-top-right {
+  @apply absolute top-2 right-2;
+}
+
+.absolute-top-left {
+  @apply absolute top-2 left-2;
+}
+
+.absolute-bottom-right {
+  @apply absolute bottom-2 right-2;
+}
+
+.absolute-bottom-left {
+  @apply absolute bottom-2 left-2;
+}
+
+/* Z-index utilities */
+.z-modal {
+  @apply z-50;
+}
+
+.z-overlay {
+  @apply z-40;
+}
+
+.z-dropdown {
+  @apply z-30;
+}
+
+.z-header {
+  @apply z-20;
+}
+
+.z-content {
+  @apply z-10;
+}
+
+.z-background {
+  @apply z-0;
+}
+
+/* ==========================================
+   Project Type Selector Classes for Light Theme
+   ========================================== */
+
+/* Main container */
+.project-type-selector-container {
+  @apply w-full max-w-4xl mx-auto px-6;
+}
+
+/* Header section */
+.project-type-selector-header {
+  @apply text-center mb-8;
+}
+
+.project-type-selector-title {
+  @apply text-3xl font-bold text-slate-800 mb-4;
+}
+
+.project-type-selector-subtitle {
+  @apply text-slate-600 text-lg max-w-2xl mx-auto;
+}
+
+/* Grid layout */
+.project-type-selector-grid {
+  @apply grid md:grid-cols-2 gap-6 mb-8;
+}
+
+/* Individual card container */
+.project-type-card-container {
+  @apply relative overflow-hidden transition-all duration-300 h-[420px] w-full;
+}
+
+.project-type-card-container-selected {
+  @apply opacity-50 scale-95;
+}
+
+.project-type-card-container-unselected {
+  @apply opacity-100 scale-100;
+}
+
+/* Card button */
+.project-type-card-button {
+  @apply w-full h-full p-6 border backdrop-blur-sm transition-all duration-300 text-left relative rounded-xl overflow-hidden;
+}
+
+.project-type-card-button-frontend {
+  @apply border-blue-400 bg-gradient-to-br from-blue-100 via-indigo-100 to-blue-200 hover:bg-gradient-to-br hover:from-blue-200 hover:via-indigo-200 hover:to-blue-300;
+}
+
+.project-type-card-button-fullstack {
+  @apply border-slate-300 bg-gradient-to-br from-emerald-50 via-teal-50 to-slate-100 hover:bg-gradient-to-br hover:from-emerald-100 hover:via-teal-100 hover:to-slate-200;
+}
+
+.project-type-card-button-selected {
+  @apply ring-2 ring-blue-500 shadow-lg shadow-blue-500/20;
+}
+
+.project-type-card-button-loading {
+  @apply cursor-not-allowed;
+}
+
+.project-type-card-button-interactive {
+  @apply cursor-pointer hover:shadow-xl;
+}
+
+.project-type-card-button-frontend-interactive {
+  @apply hover:border-blue-600 hover:shadow-blue-500/40;
+}
+
+.project-type-card-button-fullstack-interactive {
+  @apply hover:border-emerald-500/60 hover:shadow-emerald-500/30;
+}
+
+/* Disabled state */
+.project-type-card-disabled {
+  @apply opacity-70 cursor-not-allowed relative;
+}
+
+/* Ribbon styling */
+/* wrapper positions the ribbon in the card */
+.coming-soon-wrapper {
+  position: absolute;
+  top: 6rem;
+  right: -3rem;
+  width: 160px;   /* diagonal length */
+  height: 40px;   /* band thickness */
+  pointer-events: none;
+  z-index: 30;
+  overflow: visible;
+}
+
+.coming-soon-ribbon {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 200px;
+  height: 40px;
+  /* background: linear-gradient(90deg, #059669, #10b981); */
+  background: gray;
+  box-shadow: 0 4px 10px rgba(2, 6, 23, 0.15);
+  transform: rotate(45deg);
+  transform-origin: top right; /* rotate around the card corner */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.coming-soon-text {
+  color: white;
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+
+/* Hover gradient overlay */
+.project-type-card-hover-gradient {
+  @apply absolute inset-0 bg-gradient-to-br from-blue-500/20 via-indigo-500/10 to-transparent opacity-0 transition-all duration-300;
+}
+
+/* Shimmer effect */
+.project-type-card-shimmer-container {
+  @apply absolute inset-0 overflow-hidden;
+}
+
+.project-type-card-shimmer {
+  @apply absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/10 to-transparent;
+}
+
+/* Loading overlay */
+.project-type-card-loading-overlay {
+  @apply absolute inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center rounded-xl;
+}
+
+.project-type-card-loading-content {
+  @apply flex items-center gap-3 text-white;
+}
+
+/* Content container */
+.project-type-card-content {
+  @apply relative z-10 flex flex-col h-full justify-between;
+}
+
+/* Header section */
+.project-type-card-header {
+  @apply flex items-start justify-between mb-4;
+}
+
+.project-type-card-icon-container {
+  @apply p-4 rounded-xl border;
+}
+
+.project-type-card-icon-container-frontend {
+  @apply bg-gradient-to-br from-blue-200 via-indigo-200 to-blue-300 border-blue-500;
+}
+
+.project-type-card-icon-container-fullstack {
+  @apply bg-gradient-to-br from-emerald-100 via-teal-100 to-emerald-200 border-emerald-300;
+}
+
+.project-type-card-icon {
+  @apply w-10 h-10;
+}
+
+.project-type-card-icon-frontend {
+  @apply text-blue-700;
+}
+
+.project-type-card-icon-fullstack {
+  @apply text-emerald-600;
+}
+
+.project-type-card-arrow {
+  @apply w-5 h-5 opacity-0 transition-all duration-300 transform z-10;
+}
+
+/* Alternative approach - use !important if group:hover issues persist */
+.group:hover .project-type-card-arrow {
+  opacity: 100 !important;
+  transform: translateX(0.25rem) !important;
+}
+
+.project-type-card-arrow-frontend {
+  @apply text-blue-600;
+}
+
+.project-type-card-arrow-fullstack {
+  @apply text-slate-600;
+}
+
+/* Supabase requirement tag */
+.project-type-card-supabase-tag {
+  @apply mb-3 py-1 px-2 border rounded text-xs inline-flex items-center;
+}
+
+.project-type-card-supabase-tag-fullstack {
+  @apply bg-red-100 border-red-300 text-red-700;
+}
+
+/* Title and description */
+.project-type-card-title {
+  @apply text-xl font-semibold mb-2;
+}
+
+.project-type-card-title-frontend {
+  @apply text-blue-900;
+}
+
+.project-type-card-title-fullstack {
+  @apply text-slate-800;
+}
+
+.project-type-card-description {
+  @apply text-slate-600 text-sm mb-4 leading-relaxed;
+}
+
+/* Features section */
+.project-type-card-features-container {
+  @apply space-y-2;
+}
+
+.project-type-card-features-title {
+  @apply text-sm font-medium mb-2;
+}
+
+.project-type-card-features-title-frontend {
+  @apply text-blue-800;
+}
+
+.project-type-card-features-title-fullstack {
+  @apply text-slate-700;
+}
+
+.project-type-card-features-list {
+  @apply space-y-1;
+}
+
+.project-type-card-feature-item {
+  @apply flex items-center text-xs;
+}
+
+.project-type-card-feature-item-frontend {
+  @apply text-blue-700;
+}
+
+.project-type-card-feature-item-fullstack {
+  @apply text-slate-600;
+}
+
+.project-type-card-feature-dot {
+  @apply w-1.5 h-1.5 rounded-full mr-2;
+}
+
+.project-type-card-feature-dot-frontend {
+  @apply bg-blue-500;
+}
+
+.project-type-card-feature-dot-fullstack {
+  @apply bg-slate-400;
+}
+
+/* Selection indicator */
+.project-type-card-selection-indicator {
+  @apply absolute top-4 right-4 w-6 h-6 rounded-full bg-white flex items-center justify-center;
+}
+
+.project-type-card-selection-dot {
+  @apply w-2 h-2 bg-black rounded-full;
+}
+
+/* ==========================================
+   Disabled Fullstack Card Classes (Black & White)
+   ========================================== */
+
+/* Disabled button styles */
+.project-type-card-button-fullstack-disabled {
+  @apply border-gray-300 bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200;
+}
+
+.project-type-card-button-fullstack-interactive-disabled {
+  @apply hover:border-gray-400 hover:shadow-gray-500/20;
+}
+
+/* Disabled icon container */
+.project-type-card-icon-container-fullstack-disabled {
+  @apply bg-gradient-to-br from-gray-200 via-gray-100 to-gray-300 border-gray-400;
+}
+
+/* Disabled icon */
+.project-type-card-icon-fullstack-disabled {
+  @apply text-gray-600;
+}
+
+/* Disabled arrow */
+.project-type-card-arrow-fullstack-disabled {
+  @apply text-gray-500;
+}
+
+/* Disabled supabase tag */
+.project-type-card-supabase-tag-fullstack-disabled {
+  @apply bg-gray-200 border-gray-400 text-gray-600;
+}
+
+/* Disabled title */
+.project-type-card-title-fullstack-disabled {
+  @apply text-gray-700;
+}
+
+/* Disabled features title */
+.project-type-card-features-title-fullstack-disabled {
+  @apply text-gray-600;
+}
+
+/* Disabled feature items */
+.project-type-card-feature-item-fullstack-disabled {
+  @apply text-gray-500;
+}
+
+/* Disabled feature dots */
+.project-type-card-feature-dot-fullstack-disabled {
+  @apply bg-gray-400;
+}
+
+/* Bottom border */
+.project-type-card-bottom-border {
+  @apply absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-slate-400 to-transparent transform scale-x-0 transition-transform duration-300;
+}
+
+/* Additional info */
+.project-type-selector-additional-info {
+  @apply text-center;
+}
+
+.project-type-selector-additional-text {
+  @apply text-slate-500 text-sm;
+}
+
+/* ==========================================
+   Supabase Configuration Form Classes for Light Theme
+   ========================================== */
+
+/* Modal overlay */
+.supabase-modal-overlay {
+  @apply fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50;
+}
+
+/* Modal container */
+.supabase-modal-container {
+  @apply bg-white border border-slate-300 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl;
+}
+
+/* Modal header */
+.supabase-modal-header {
+  @apply flex items-center justify-between p-6 border-b border-slate-200;
+}
+
+.supabase-modal-header-content {
+  @apply flex items-center gap-3;
+}
+
+.supabase-modal-header-icon-container {
+  @apply p-2 bg-purple-100 rounded-lg;
+}
+
+.supabase-modal-header-icon {
+  @apply w-6 h-6 text-purple-600;
+}
+
+.supabase-modal-title {
+  @apply text-xl font-semibold text-slate-800;
+}
+
+.supabase-modal-subtitle {
+  @apply text-sm text-slate-600;
+}
+
+.supabase-modal-close-button {
+  @apply p-2 text-slate-500 hover:text-slate-700 transition-colors;
+}
+
+/* Form container */
+.supabase-form-container {
+  @apply p-6 space-y-6;
+}
+
+/* Auto-setup section */
+.supabase-auto-setup-section {
+  @apply p-4 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg;
+}
+
+.supabase-auto-setup-header {
+  @apply flex items-start gap-3 mb-4;
+}
+
+.supabase-auto-setup-icon {
+  @apply w-5 h-5 text-purple-600 mt-0.5;
+}
+
+.supabase-auto-setup-title {
+  @apply font-medium text-slate-800 mb-1;
+}
+
+.supabase-auto-setup-description {
+  @apply text-sm text-slate-600;
+}
+
+.supabase-auto-setup-content {
+  @apply space-y-3;
+}
+
+/* Form labels */
+.supabase-form-label {
+  @apply block text-sm font-medium text-slate-700 mb-2;
+}
+
+/* Form inputs */
+.supabase-form-input {
+  @apply w-full bg-white border rounded-lg text-slate-800 p-3 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all duration-200 placeholder-slate-500;
+}
+
+.supabase-form-input-error {
+  @apply border-red-300 focus:ring-red-500/50 focus:border-red-500/50;
+}
+
+.supabase-form-input-normal {
+  @apply border-slate-300;
+}
+
+.supabase-form-input-with-icon {
+  @apply pr-10;
+}
+
+/* Input container with icon */
+.supabase-input-container {
+  @apply relative;
+}
+
+.supabase-input-icon-button {
+  @apply absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 hover:text-slate-700 transition-colors;
+}
+
+/* Error messages */
+.supabase-error-message {
+  @apply text-red-600 text-sm mt-1;
+}
+
+/* Auto-fetch button */
+.supabase-auto-fetch-button {
+  @apply flex items-center justify-center gap-2 w-full px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:from-slate-400 disabled:to-slate-500 disabled:cursor-not-allowed text-white rounded-lg transition-all duration-200 font-medium;
+}
+
+/* Project limit section */
+.supabase-project-limit-section {
+  @apply p-4 bg-red-50 border border-red-200 rounded-lg;
+}
+
+.supabase-project-limit-header {
+  @apply flex items-start gap-3 mb-4;
+}
+
+.supabase-project-limit-icon {
+  @apply w-5 h-5 text-red-600 mt-0.5;
+}
+
+.supabase-project-limit-title {
+  @apply font-medium text-slate-800 mb-1;
+}
+
+.supabase-project-limit-description {
+  @apply text-sm text-slate-600 mb-3;
+}
+
+.supabase-project-limit-content {
+  @apply space-y-3;
+}
+
+/* Project list */
+.supabase-project-list {
+  @apply space-y-2 max-h-32 overflow-y-auto;
+}
+
+.supabase-project-item {
+  @apply flex items-center justify-between p-2 bg-slate-100 rounded border border-slate-200;
+}
+
+.supabase-project-info {
+  @apply flex-1;
+}
+
+.supabase-project-name {
+  @apply text-slate-800 text-sm font-medium;
+}
+
+.supabase-project-detail {
+  @apply text-slate-600 text-xs;
+}
+
+/* Delete project button */
+.supabase-delete-project-button {
+  @apply flex items-center justify-center gap-2 w-full px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-slate-400 disabled:cursor-not-allowed text-white rounded-lg transition-all duration-200 font-medium;
+}
+
+/* Manual configuration section */
+.supabase-manual-config-section {
+  @apply space-y-6;
+}
+
+.supabase-manual-config-divider {
+  @apply border-t border-slate-200 pt-6;
+}
+
+.supabase-manual-config-title {
+  @apply text-lg font-medium text-slate-800 mb-4;
+}
+
+/* Help text section */
+.supabase-help-section {
+  @apply p-4 bg-blue-50 border border-blue-200 rounded-lg;
+}
+
+.supabase-help-content {
+  @apply flex items-start gap-2;
+}
+
+.supabase-help-icon {
+  @apply w-4 h-4 text-blue-600 mt-0.5;
+}
+
+.supabase-help-text {
+  @apply text-sm text-blue-700;
+}
+
+.supabase-help-title {
+  @apply font-medium mb-1;
+}
+
+.supabase-help-list {
+  @apply space-y-1 text-xs;
+}
+
+/* Action buttons */
+.supabase-actions-container {
+  @apply flex flex-col sm:flex-row gap-3;
+}
+
+.supabase-load-example-button {
+  @apply px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-all duration-200 border border-slate-300;
+}
+
+.supabase-actions-group {
+  @apply flex gap-3 flex-1;
+}
+
+.supabase-cancel-button {
+  @apply flex-1 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-all duration-200 border border-slate-300;
+}
+
+.supabase-save-button {
+  @apply flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg transition-all duration-200 font-medium;
+}
+
+/* Timer specific animations - add to your CSS */
+.timer-breathe {
+  animation: timerBreathe 2s ease-in-out infinite;
+}
+
+@keyframes timerBreathe {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+/* Optional: Add to timer container */
+.timer-container:hover {
+  @apply shadow-xl;
+}
+
+/*---break---*/
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+/*---break---*/
+:root {
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+/*---break---*/
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+/*---break---*/
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* ==========================================
+   Chat Input Bar Styles (Lovable Design)
+   ========================================== */
+
+.chat-input-container {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  margin-top: 0.5rem;
+  position: relative;
+}
+
+.chat-input-area {
+  padding: 0rem 1rem 0.5rem 1rem; 
+  background: #f5f8fb;
+}
+
+.chat-input-field-section {
+  padding: 0.25rem 0.75rem 0rem 0.75rem;
+}
+
+.chat-input-buttons-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.25rem 0.75rem;
+  /* border-top: 1px solid #f3f4f6; */
+}
+
+.chat-input-bottom-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  border-top: 1px solid #f3f4f6;
+  background: #fafafa;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.chat-textarea {
+  width: 100%;
+  resize: none;
+  overflow-y: auto;
+  max-height: 12rem;
+  min-height: 1.25rem;
+  line-height: 1.25rem;
+  border: none;
+  outline: none;
+  padding: 0.125rem 0.5rem;
+  background: transparent;
+  font-family: inherit;
+  font-size: 0.875rem;
+  color: #374151;
+  box-sizing: border-box;
+  transition: height 0.1s ease;
+  margin-top: 0.5rem;
+}
+
+.chat-textarea::placeholder {
+  color: #9ca3af;
+}
+
+.chat-textarea:disabled {
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.chat-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.chat-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #6b7280;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.chat-button:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #9ca3af;
+  color: #374151;
+}
+
+.chat-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.chat-button-primary {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: #fff;
+}
+
+.chat-button-primary:hover:not(:disabled) {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+.chat-button-stop {
+  background: grey;
+  border-color: grey;
+  color: #fff;
+}
+
+.chat-button-stop:hover:not(:disabled) {
+  background: #dc2626;
+  border-color: #dc2626;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .chat-input-field-section {
+    padding: 0.375rem 0.5rem 0rem 0.5rem;
+  }
+  
+  .chat-input-buttons-section {
+    padding: 0.25rem 0.5rem;
+  }
+  
+  .chat-textarea {
+    min-height: 1.125rem;
+    padding: 0.125rem 0.5rem;
+    font-size: 0.8125rem;
+    line-height: 1.125rem;
+  }
+  
+  .chat-button {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+  
+  .chat-buttons {
+    gap: 0.375rem;
+  }
+}
+
+/* Max width for large screens */
+@media (min-width: 1024px) {
+  .chat-input-container {
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
