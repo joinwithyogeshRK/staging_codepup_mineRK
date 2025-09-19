@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { Upload, ImageIcon, FileText } from "lucide-react";
+import { Upload, ImageIcon, FileText, Lightbulb } from "lucide-react";
 import * as pdfjsLib from "pdfjs-dist";
 import PdfPreview from "./pdfpreview";
 
@@ -43,7 +43,7 @@ const ImageUploadSection = ({
       // Check page limit
       if (pdf.numPages > 5) {
         showToast(
-          `PDF "${pdfFile.name}" has ${pdf.numPages} pages. Maximum 5 pages allowed.`,
+          `Arf! 🐶 "${pdfFile.name}" has ${pdf.numPages} pages. Our pup can only handle 5 at a time.`,
           "error"
         );
         return [];
@@ -101,10 +101,6 @@ const ImageUploadSection = ({
         extractedImages.push(imageFile);
       }
 
-      showToast(
-        `Successfully extracted ${extractedImages.length} images from PDF`,
-        "success"
-      );
       return extractedImages;
     } catch (error: unknown) {
       
@@ -113,14 +109,14 @@ const ImageUploadSection = ({
 
       // More specific error messages
       if (errorMessage.includes("Invalid PDF")) {
-        showToast(`"${pdfFile.name}" is not a valid PDF file`, "error");
+        showToast(`Arf! 🐶 "${pdfFile.name}" doesn’t look like a valid PDF. Try another file?`, "error");
       } else if (errorMessage.includes("workerSrc")) {
         showToast(
-          "PDF.js worker not properly configured. Please refresh and try again.",
+          "Arf! 🐶 Our pup couldn’t chew through this PDF. Please refresh and try again!",
           "error"
         );
       } else {
-        showToast(`Failed to process PDF: ${errorMessage}`, "error");
+        showToast(`Arf! 🐾 Our pup had trouble sniffing through your PDF: ${errorMessage}.`, "error");
       }
       return [];
     } finally {
@@ -145,7 +141,7 @@ const ImageUploadSection = ({
       const supportedFiles = imageFiles.length + pdfFiles.length;
       if (supportedFiles !== newFiles.length) {
         showToast(
-          "Only image files (PNG, JPG, GIF) and PDF files are supported",
+          "Woof! 🐾 Our pup only accepts images (PNG, JPG, JPEG, WEBP) or PDFs.",
           "error"
         );
       }
@@ -168,7 +164,7 @@ const ImageUploadSection = ({
           // Check file size (3.75MB limit)
           if (pdfFile.size > 3.75 * 1024 * 1024) {
             showToast(
-              `PDF file "${pdfFile.name}" is too large. Maximum size is 3.75MB`,
+              `Ruff! 🐶 "${pdfFile.name}" is too big for our pup to carry. Max size is 3.75MB.`,
               "error"
             );
             continue;
@@ -188,15 +184,44 @@ const ImageUploadSection = ({
         }
       }
 
+      // Remove duplicates: prevent re-adding the same standalone image or same PDF page
+      const existingKeys = new Set(
+        selectedImages.map((img: File) => {
+          const originalPdfName = (img as any).originalPdfName;
+          const pageNumber = (img as any).pageNumber;
+          return originalPdfName
+            ? `pdf:${originalPdfName}:${pageNumber}`
+            : `img:${img.name}:${img.size}`;
+        })
+      );
+
+      const batchKeys = new Set<string>();
+      const dedupedFiles: File[] = [];
+      for (const file of allImageFiles) {
+        const originalPdfName = (file as any).originalPdfName;
+        const pageNumber = (file as any).pageNumber;
+        const key = originalPdfName
+          ? `pdf:${originalPdfName}:${pageNumber}`
+          : `img:${file.name}:${file.size}`;
+
+        if (existingKeys.has(key) || batchKeys.has(key)) {
+          continue;
+        }
+        batchKeys.add(key);
+        dedupedFiles.push(file);
+      }
+
+      if (dedupedFiles.length < allImageFiles.length) {
+        showToast("Woof! 🐾 That file is already in the basket. No double treats allowed!", "error");
+      }
+
       // Validate image files
       const validImageFiles: File[] = [];
-      for (const file of allImageFiles) {
+      for (const file of dedupedFiles) {
         // Check file size
         if ((file as File).size > 3.75 * 1024 * 1024) {
           showToast(
-            `Image "${
-              (file as File).name
-            }" is too large. Maximum size is 3.75MB`,
+            `Ruff! 🐶 "${(file as File).name}" is too big for our pup to carry. Max size is 3.75MB.`,
             "error"
           );
           continue;
@@ -210,15 +235,15 @@ const ImageUploadSection = ({
 
         if (availableSlots <= 0) {
           showToast(
-            "You can add only 5 images. Remove existing to add more",
+            "Woof! 🐾 You can only keep 5 images. Remove one before adding more.",
             "error"
           );
           return prev;
         }
-
+        // User selects more than 5 images at once
         if (validImageFiles.length > availableSlots) {
           showToast(
-            `Only ${availableSlots} image(s) were added due to the 5-image limit`,
+            `Yip! 🐾 Our pup could only fetch ${availableSlots} images because of the 5-image limit.`,
             "error"
           );
         }
@@ -230,7 +255,7 @@ const ImageUploadSection = ({
       // Clear the input
       e.target.value = "";
     },
-    [setSelectedImages, showToast]
+    [setSelectedImages, showToast, selectedImages, setSelectedPdfs]
   );
 
   // Helper function to group images by their original PDF
@@ -273,8 +298,8 @@ const ImageUploadSection = ({
   return (
     <div className="image-upload-section">
       <label className="image-upload-label">
-        <ImageIcon className="size-icon-small inline mr-2" />
-        Add reference images or PDFs (optional)
+        {/* <Lightbulb className="size-icon-small inline mr-2 text-yellow-500" />
+        Attach your PDFs (like resume for portfolio) or add reference images for your website. */}
       </label>
       <div className="relative">
         <input
@@ -306,18 +331,15 @@ const ImageUploadSection = ({
             ) : (
               <>
                 <Upload className="image-upload-icon" />
-                <p className="image-upload-text">
-                  {selectedImages.length > 0
-                    ? `${selectedImages.length} image${
-                        selectedImages.length > 1 ? "s" : ""
-                      } selected`
-                    : "Click to upload images or PDFs"}
-                </p>
-                <p className="image-upload-hint">
-                  Images: PNG, JPG, GIF | PDFs: converted to images
-                  <br />
-                  Up to 3.75MB each (max 5 files total)
-                </p>
+                
+                <div className="image-upload-hint">
+                  <ul className="text-[14px]">
+                    <li> Attach your PDFs (like resume for portfolio) for your website</li>
+                    <li> Reference images: Add brand shots, color swatches, or layout mocks so your site looks <em>paws-itively</em> customized.</li>
+                    {/* <li>Images | PDFs (up to 5 pages)</li> */}
+                    {/* <li>Max 5 files total, up to 3.75MB each.</li> */}
+                  </ul>
+                </div>
               </>
             )}
           </div>

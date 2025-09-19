@@ -11,7 +11,6 @@
   },
   "dependencies": {
     "@amplitude/analytics-browser": "^2.23.7",
-    "@amplitude/engagement-browser": "^1.0.3",
     "@amplitude/plugin-session-replay-browser": "^1.22.12",
     "@clerk/clerk-react": "^5.32.0",
     "@monaco-editor/react": "^4.7.0",

@@ -1,6 +1,7 @@
 import "./App.css";
-import Index from "./pages/Index";
-import ChatPage from "./pages/ChatPage";
+import Index from "./pages/Landing/Index";
+import ChatPage from "./pages/ChatPage/ChatPage";
+import { ToastProvider } from "./helper/Toast";
 // import Hackathon from "./pages/Hackathon";
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -14,6 +15,7 @@ import HackathonOverComponent from "./pages/HackathonCompletionPage";
 function App() {
   return (
     <>
+     <ToastProvider>
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
@@ -27,6 +29,7 @@ function App() {
           <Route path="/dashboard" element={<UserDashboard />} />
         </Routes>
       </BrowserRouter>
+      </ToastProvider>
     </>
   );
 }
