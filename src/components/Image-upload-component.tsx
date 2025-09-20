@@ -335,7 +335,7 @@ const ImageUploadSection = ({
                 <div className="image-upload-hint">
                   <ul className="text-[14px]">
                     <li> Attach your PDFs (like resume for portfolio) for your website</li>
-                    <li> Reference images: Add brand shots, color swatches, or layout mocks so your site looks <em>paws-itively</em> customized.</li>
+                    <li> You can also add brand shots, color swatches, or layout mocks so your site looks <em>paws-itively</em> customized.</li>
                     {/* <li>Images | PDFs (up to 5 pages)</li> */}
                     {/* <li>Max 5 files total, up to 3.75MB each.</li> */}
                   </ul>

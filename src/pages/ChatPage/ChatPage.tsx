@@ -36,8 +36,6 @@ import {
   Image,
   File,
   Globe,
-  Menu,
-  X,
 } from "lucide-react";
 import { StreamingCodeDisplay, FileCompletionTracker } from "../streaming";
 import axios from "axios";
@@ -81,6 +79,7 @@ const ChatPage: React.FC = () => {
   const [deployError, setDeployError] = useState<string | null>(null);
   const [lastDeployTime, setLastDeployTime] = useState<Date | null>(null);
   const [showPublishMenu, setShowPublishMenu] = useState(false);
+  const [showChatPublishMenu, setShowChatPublishMenu] = useState(false);
 
   // Agent activation: disable input/send while activating container
   const [isAgentActivating, setIsAgentActivating] = useState(false);
@@ -134,7 +133,6 @@ const ChatPage: React.FC = () => {
 
   // Responsive flags
   const [isNarrow, setIsNarrow] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   useEffect(() => {
     const update = () => setIsNarrow(window.innerWidth < 1024);
     update();
@@ -317,6 +315,35 @@ const ChatPage: React.FC = () => {
       setActiveTab("preview");
     }
   }, [previewUrl, isStreamingGeneration]);
+
+  // Auto-show preview section on mobile when iframe is active
+  useEffect(() => {
+    // Only apply this logic on mobile/medium devices (isNarrow)
+    if (!isNarrow) return;
+    
+    // Show preview section when:
+    // 1. Preview URL is available
+    // 2. Container is online (iframe is loaded and working)
+    // 3. Not currently in a workflow or streaming state
+    if (
+      previewUrl && 
+      isContainerOnline === true && 
+      !isWorkflowActive && 
+      !isStreamingGeneration && 
+      !isStreamingModification
+    ) {
+      setIsChatHidden(true); // Hide chat to show preview
+    }
+    // Switch back to chat when iframe becomes unavailable
+    else if (
+      (!previewUrl || isContainerOnline === false) && 
+      !isWorkflowActive && 
+      !isStreamingGeneration && 
+      !isStreamingModification
+    ) {
+      setIsChatHidden(false); // Show chat when preview is not available
+    }
+  }, [isNarrow, previewUrl, isContainerOnline, isWorkflowActive, isStreamingGeneration, isStreamingModification]);
   const { getToken } = useAuth();
   const {
     // Functions
@@ -369,13 +396,15 @@ const ChatPage: React.FC = () => {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (showUploadMenu || showPublishMenu) {
+      if (showUploadMenu || showPublishMenu || showChatPublishMenu) {
         const target = event.target as Element;
         const uploadButton = target.closest("[data-upload-menu]");
         const publishButton = target.closest("[data-publish-menu]");
-        if (!uploadButton && !publishButton) {
+        const chatPublishButton = target.closest("[data-chat-publish-menu]");
+        if (!uploadButton && !publishButton && !chatPublishButton) {
           setShowUploadMenu(false);
           setShowPublishMenu(false);
+          setShowChatPublishMenu(false);
           // Clear clipboard image when menu is closed
           if (clipboardImage) {
             setClipboardImage(null);
@@ -383,14 +412,6 @@ const ChatPage: React.FC = () => {
           // Reset selection when menu closes
           setClipboardSelectedOption("images");
           setHoveredOption(null);
-        }
-      }
-      // Close mobile hamburger if clicking outside
-      if (isMenuOpen) {
-        const target = event.target as Element;
-        const mobileMenu = target.closest("[data-mobile-menu]");
-        if (!mobileMenu) {
-          setIsMenuOpen(false);
         }
       }
     };
@@ -402,12 +423,12 @@ const ChatPage: React.FC = () => {
   }, [
     showUploadMenu,
     showPublishMenu,
+    showChatPublishMenu,
     setShowUploadMenu,
     clipboardImage,
     setClipboardImage,
     setClipboardSelectedOption,
     setHoveredOption,
-    isMenuOpen,
   ]);
 
   // Watch streaming events for insufficient credits (modification path)
@@ -834,6 +855,13 @@ const ChatPage: React.FC = () => {
           projectId={projectId}
           showToast={showToast}
           getToken={getToken}
+          credits={credits}
+          shareAbleUrl={shareAbleUrl}
+          showPublishMenu={showChatPublishMenu}
+          setShowPublishMenu={setShowChatPublishMenu}
+          handleDeploy={handleDeploy}
+          canDeploy={canDeploy}
+          deploymentUrl={deploymentUrl}
         />
         {/* Vertical divider for resizing */}
         {!isChatHidden && !isNarrow && (
@@ -918,9 +946,9 @@ const ChatPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Right side: GitHub, Publish, and other buttons */}
+              {/* Right side: GitHub, Credits, and Share buttons */}
               <div className="flex items-center gap-2 h-8">
-                {/* GitHub Connect Button */}
+                {/* GitHub Connect Button - Desktop only */}
                 {projectStatus === "ready" && (
                   <div className="hidden lg:flex items-center h-8">
                     <Dialog>
@@ -957,76 +985,13 @@ const ChatPage: React.FC = () => {
                   </div>
                 )}
 
-                {/* Credits Indicator always last before menu */}
+                {/* Credits Indicator */}
                 <div className="flex items-center">
                   <Credit value={credits} />
                 </div>
-                {/* Mobile/medium: hamburger menu AFTER credits */}
-                <div className="lg:hidden relative" data-mobile-menu>
-                  <button
-                    className="w-8 h-8 flex items-center justify-center rounded-md border border-default hover:bg-slate-50"
-                    onClick={() => setIsMenuOpen((v) => !v)}
-                    aria-label="Menu"
-                  >
-                    <Menu className="w-5 h-5" />
-                  </button>
-                  {isMenuOpen && (
-                    <div className="absolute right-0 mt-2 bg-white border border-default rounded-md shadow-lg w-56 py-1 z-50">
-                      <button
-                        onClick={async () => {
-                          if (isDeploying || (!canDeploy && !deploymentUrl))
-                            return;
-                          await handleDeploy();
-                          setIsMenuOpen(false);
-                        }}
-                        disabled={isDeploying || (!canDeploy && !deploymentUrl)}
-                        className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-50 flex items-center gap-2 ${
-                          isDeploying || (!canDeploy && !deploymentUrl)
-                            ? "opacity-50 cursor-not-allowed"
-                            : ""
-                        }`}
-                        title="Publish"
-                      >
-                        {isDeploying ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            <span>Generating shareable URL...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Rocket className="w-4 h-4" />
-                            <span>Share</span>
-                          </>
-                        )}
-                      </button>
-                      {shareAbleUrl && (
-                        <div className="px-3 py-2 border-t border-gray-100">
-                          <div className="flex items-center gap-2">
-                            <Globe className="w-4 h-4 text-slate-600" />
-                            <div className="flex-1 min-w-0">
-                              <div className="text-xs text-gray-500 mb-1">
-                                Preview
-                              </div>
-                              <a
-                                className="text-xs text-blue-600 hover:text-blue-800 break-all"
-                                href={shareAbleUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                {shareAbleUrl}
-                              </a>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-                {/* Publish Button (desktop) */}
-                <div
-                  className="hidden lg:flex relative items-center h-8"
-                  data-publish-menu
-                >
+
+                {/* Share Button - Universal for all devices */}
+                <div className="flex relative items-center h-8" data-publish-menu>
                   <button
                     onClick={() => setShowPublishMenu((prev) => !prev)}
                     className="btn-publish-primary h-8 px-3 rounded-md"
