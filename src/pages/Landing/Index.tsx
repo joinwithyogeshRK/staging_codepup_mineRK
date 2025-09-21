@@ -935,111 +935,13 @@ const Index = () => {
 
           {/* Content only visible when signed in */}
           <SignedIn>
-            {workflowActive ? (
+            {workflowActive && !isLoading && !readyToGenerate ? (
               // Show the analyze/feedback workflow
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="workflow-container mb-12"
               >
-                <div className="workflow-grid">
-                  {/* Chat Messages - Left Side */}
-                  <div className="workflow-chat-section">
-                    <div className="bg-gradient-to-br from-slate-100 to-slate-200 backdrop-blur-sm border border-slate-300 rounded-xl shadow-medium">
-                      {/* Header */}
-                      <div className="p-4 border-b border-slate-300">
-                        <div className="flex-between">
-                          <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-                            <Settings className="size-icon-medium text-blue-600" />
-                            Design Process
-                          </h3>
-                        </div>
-                      </div>
-
-                      {/* Messages */}
-                      <div className="workflow-messages">
-                        <AnimatePresence>
-                          {workflowMessages.map((message) => (
-                            <motion.div
-                              key={message.id}
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              className={`flex ${
-                                message.type === "user"
-                                  ? "justify-end"
-                                  : "justify-start"
-                              }`}
-                            >
-                              <div
-                                className={`max-w-[80%] p-3 rounded-lg ${
-                                  message.type === "user"
-                                    ? "bg-blue-600/20 border border-blue-500/30 text-slate-800"
-                                    : "bg-slate-100 border border-slate-300 text-slate-700"
-                                }`}
-                              >
-                                <p className="text-sm whitespace-pre-wrap">
-                                  {message.content}
-                                  {message.isLoading && (
-                                    <span className="inline-block ml-2">
-                                      <Loader2 className="size-icon-small animate-spin" />
-                                    </span>
-                                  )}
-                                </p>
-                                <span className="text-xs text-slate-500 mt-1 block">
-                                  {message.timestamp.toLocaleTimeString()}
-                                </span>
-                              </div>
-                            </motion.div>
-                          ))}
-                        </AnimatePresence>
-                        <div ref={messagesEndRef} />
-                      </div>
-
-                      {/* Input or Actions */}
-                      <div className="workflow-input-section">
-                        {readyToGenerate ? (
-                          <motion.button
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={generateApplication}
-                            className="btn-primary-large"
-                          >
-                            <CheckCircle className="size-icon-medium" />
-                            Generate Complete Application
-                            <ArrowRight className="size-icon-small" />
-                          </motion.button>
-                        ) : (
-                          <FeedbackInput
-                            onSubmit={onFeedbackSubmit}
-                            isLoading={
-                              isProcessingFeedback ||
-                              (currentStep === "analyze" && !designChoices)
-                            }
-                            placeholder={
-                              currentStep === "analyze" && !designChoices
-                                ? "CodePup is generating design..."
-                                : isProcessingFeedback
-                                ? "CodePup is applying your feedback..."
-                                : undefined
-                            }
-                          />
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Design Preview - Right Side */}
-                  <WorkflowPreview
-                    designChoices={designChoices}
-                    displayStep={displayStep}
-                    readyToGenerate={readyToGenerate}
-                    setSelectedDesignForPreview={setSelectedDesignForPreview}
-                    setShowDesignPreview={setShowDesignPreview}
-                    amplitude={amplitude}
-                  />
-                </div>
               </motion.div>
             ) : (
               // Show either project type selector OR normal prompt input
