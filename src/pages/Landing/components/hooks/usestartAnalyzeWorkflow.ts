@@ -2,6 +2,7 @@
 import { useCallback } from "react";
 import axios from "axios";
 import { uploadFilesToDatabase } from "../../../../utils/fileUpload"; // adjust path if needed
+import { useNavigate } from "react-router-dom";
 import type {
   DbUser,
   Project,
@@ -52,12 +53,13 @@ export function useProjectWorkflow({
   amplitudeTrack,
   BASE_URL,
 }: UseProjectWorkflowParams) {
+  const navigate = useNavigate();
   const startAnalyzeWorkflow = useCallback(
     async (projectId: number, userPrompt: string) => {
       setWorkflowActive(true);
       setWorkflowMessages([]);
       setDesignChoices(null);
-      setReadyToGenerate(false);
+      setReadyToGenerate(true); // Set to true immediately to prevent UI from showing
       setIsLoading(true);
 
       try {
@@ -124,19 +126,42 @@ export function useProjectWorkflow({
             // processedDesignChoices.colorScheme = extractColorsFromDesignChoices(processedDesignChoices);
           }
 
-          const assistantMessage: WorkflowMessage = {
-            id: `assistant-${Date.now()}`,
-            content: analyzeResponse.data.message,
-            type: "assistant",
-            timestamp: new Date(),
-            step: analyzeResponse.data.step,
-            designChoices: processedDesignChoices,
-          };
-
-          setWorkflowMessages((prev) => [...prev, assistantMessage]);
-          setCurrentStep(analyzeResponse.data.step);
+          // Set the design choices for the backend to reference
           setDesignChoices(processedDesignChoices);
           setReadyToGenerate(analyzeResponse.data.readyToGenerate || false);
+
+          // Automatically navigate to chatpage after design analysis is complete
+          // This replaces the manual green button click
+          const currentProject = projects.find((p) => p.id === projectId);
+          
+          // Check if it's fullstack and no backend config
+          if (currentProject?.scope === "fullstack" && !supabaseConfig) {
+            // If fullstack without config, we can't proceed - let the user handle this
+            const assistantMessage: WorkflowMessage = {
+              id: `assistant-${Date.now()}`,
+              content: analyzeResponse.data.message,
+              type: "assistant",
+              timestamp: new Date(),
+              step: analyzeResponse.data.step,
+              designChoices: processedDesignChoices,
+            };
+            setWorkflowMessages((prev) => [...prev, assistantMessage]);
+            setCurrentStep(analyzeResponse.data.step);
+            return;
+          }
+
+          // Navigate directly to chatpage (equivalent to generateApplication)
+          navigate("/chatPage", {
+            state: {
+              projectId: projectId,
+              existingProject: true,
+              clerkId: dbUser!.clerkId,
+              userId: dbUser!.id,
+              supabaseConfig: supabaseConfig,
+              fromWorkflow: true,
+              scope: currentProject?.scope || selectedProjectType || "frontend",
+            },
+          });
         }
       } catch (error) {
         const errorMessage: WorkflowMessage = {
@@ -166,6 +191,7 @@ export function useProjectWorkflow({
       setCurrentStep,
       setIsLoading,
       BASE_URL,
+      navigate,
     ]
   );
 
