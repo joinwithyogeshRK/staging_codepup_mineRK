@@ -66,6 +66,7 @@ interface Project {
   name: string;
   description?: string;
   deploymentUrl?: string;
+  productionUrl?: string;
   projectType?: string;
   status?: string;
   scope?: "frontend" | "fullstack";
@@ -323,10 +324,10 @@ useEffect(() => {
 
 2. **Design & Generation**
    - `POST /api/design/analyze` - Design analysis workflow
-   - `POST /api/design/feedback` - Design feedback processing
+   <!-- - `POST /api/design/feedback` - Design feedback processing -->
    - `POST /api/design/generate` - Generate design files
    - `POST /api/design/generateFrontendOnly` - Frontend-only generation
-   - `POST /api/design/generate-frontend` - Full-stack generation
+   <!-- - `POST /api/design/generate-frontend` - Full-stack generation -->
 
 3. **Modifications**
    - `POST /api/modify/stream` - Stream modifications with images

@@ -1007,8 +1007,7 @@ const Index = () => {
                           }
                           className="textarea-main"
                           disabled={
-                            selectedProjectType === "fullstack" &&
-                            !isConfigValid
+                            (selectedProjectType === "fullstack" && !isConfigValid) || workflowActive
                           }
                         />
 

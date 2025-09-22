@@ -483,7 +483,7 @@ const ChatSection: React.FC<ChatSectionProps> = ({
                           )}
                         </div>
                       )}
-                      <div className="text-strong text-sm flex-1 min-w-0 overflow-hidden">
+                      <div className={`${message.type === "assistant" ? "text-muted " : "text-strong"} text-sm flex-1 min-w-0 overflow-hidden`}>
                         <div className="whitespace-pre-wrap break-words word-wrap-break-word overflow-wrap-anywhere">
                           {/* Render message content as markdown with custom styling */}
                           <ReactMarkdown
