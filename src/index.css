@@ -575,7 +575,9 @@
 
 /* Elevation/containers */
 .header-bar {
-  @apply bg-white/80 backdrop-blur-sm border-b border-slate-200/50 h-12 flex items-center px-3 z-40 relative;
+  @apply bg-white/80 backdrop-blur-sm border-b border-slate-200/50 h-12 flex items-center px-3 sticky top-0;
+  z-index: 50;
+  padding-top: env(safe-area-inset-top);
 }
 
 /* Publish dropdown panel */
@@ -638,11 +640,13 @@
   to { opacity: 0; transform: translateY(-6px); }
 }
 .sidebar {
-  @apply w-1/4 flex flex-col border-r border-slate-200/50 h-screen;
+  @apply w-1/4 flex flex-col border-r border-slate-200/50;
+  height: 100dvh;
 }
 
 .chat-layout {
-  @apply h-screen flex overflow-hidden;
+  height: 100dvh;
+  @apply flex overflow-hidden;
 }
 .panel {
   @apply bg-white rounded-lg shadow;
@@ -2249,7 +2253,20 @@
   }
   body {
     @apply bg-background text-foreground;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
   }
+}
+
+/* Ensure main full-height layouts account for dynamic mobile viewport */
+.chat-layout {
+  height: 100dvh;
+  @apply flex overflow-hidden;
+}
+
+/* In case any section uses h-screen explicitly, provide a helper */
+.h-dvh {
+  height: 100dvh;
 }
 
 /* ==========================================

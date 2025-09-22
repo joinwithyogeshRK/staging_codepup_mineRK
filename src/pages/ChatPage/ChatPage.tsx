@@ -792,7 +792,7 @@ const ChatPage: React.FC = () => {
       {/* Toast Notifications */}
       <div
         ref={containerRef}
-        className="w-full bg-app chat-layout flex h-screen"
+        className="w-full bg-app chat-layout flex h-dvh"
         style={{ width: "100%" }}
       >
         {/* Chat Section - resizable */}
