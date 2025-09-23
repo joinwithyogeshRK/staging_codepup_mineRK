@@ -3,6 +3,7 @@ import { Loader2, Code } from "lucide-react";
 import BlankApp from "../../../components/BlankApp";
 import { StreamingCodeDisplay } from "../../streaming";
 import { formatCountdown } from "./utils/displayCounter"
+import { useToast } from "../../../helper/Toast";
 
 interface PreviewContentProps {
   // Preview state
@@ -72,6 +73,8 @@ const PreviewContent: React.FC<PreviewContentProps> = ({
   projectStatus,
   getWorkflowSteps,
 }) => {
+  // Ready for global toasts if needed
+  const { showToast } = useToast();
   return (
     <div className="flex-1 p-4">
       <div className="w-full h-full panel-elevated overflow-hidden relative">

@@ -19,6 +19,7 @@ import PdfPreview from "@/components/pdfpreview";
 import UnifiedFileUploadSection from "../../../components/UnifiedFileUpload";
 import type { UnifiedFileUploadRef } from "../../../components/UnifiedFileUpload";
 import Credit from "../../../components/Credit";
+import { useToast } from "../../../helper/Toast";
 
 interface Message {
   id: string;
@@ -181,6 +182,8 @@ const ChatSection: React.FC<ChatSectionProps> = ({
   canDeploy,
   deploymentUrl,
 }) => {
+  const { showToast: globalShowToast } = useToast();
+  const notify = showToast || globalShowToast;
   return (
     <div
       className={`sidebar transition-all duration-300 ease-out flex flex-col ${
@@ -600,9 +603,9 @@ const ChatSection: React.FC<ChatSectionProps> = ({
               </span>
               <button
                 onClick={() =>
-                  uploadMode === "images"
-                    ? clearSelectedImages()
-                    : clearSelectedAssets()
+                  uploadMode === "assets"
+                    ? clearSelectedAssets()
+                    : clearSelectedImages()
                 }
                 className="text-xs text-danger hover:text-danger-weak"
               >
@@ -684,14 +687,14 @@ const ChatSection: React.FC<ChatSectionProps> = ({
                 // Automatically hide the input after file selection
                 if (files.length > 0) {
                   setTimeout(() => setShowDocsInput(false), 200);
-                  showToast("Files selected successfully", "success");
+                  notify("Files selected successfully", "success");
                 }
               }}
               isConfigValid={true}
               uploadMode="docs"
               projectId={projectId}
               getToken={getToken}
-              showToast={showToast}
+              showToast={notify}
             />
           </div>
         )}
@@ -702,17 +705,27 @@ const ChatSection: React.FC<ChatSectionProps> = ({
             <input
               type="file"
               ref={fileInputRef}
-              onChange={handleImageSelect}
+              onChange={(e) => {
+                const files = Array.from(e.target.files || []);
+                if (files.length > 1) {
+                  notify("Only select one image", "error");
+                }
+                handleImageSelect(e);
+              }}
               accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml,image/ico,image/x-icon,image/vnd.microsoft.icon,image/bmp,image/tiff"
-              multiple
               className="hidden"
             />
             <input
               type="file"
               ref={assetInputRef}
-              onChange={handleAssetSelect}
+              onChange={(e) => {
+                const files = Array.from(e.target.files || []);
+                if (files.length > 1) {
+                  notify("Only select one file", "error");
+                }
+                handleAssetSelect(e);
+              }}
               accept="image/*,application/pdf,text/plain,application/json,audio/*,video/*,font/*,text/css,application/javascript,application/zip"
-              multiple
               className="hidden"
             />
           </>
