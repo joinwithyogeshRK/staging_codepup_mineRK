@@ -1222,7 +1222,7 @@ export const useChatPageLogic = (
           break;
 
         case "error":
-          setError(data.error || "Application generation failed");
+          setError(data.error || "Arf! 🐾 We’ve lost connection to our den for a moment.\nDon’t worry — our pup is still working hard in the background to fetch your app!\nPlease head back to the home page and give it about 5 minutes. Then return, and your project should be ready to play fetch with. 🐕✨");
           setIsStreamingGeneration(false);
           setIsWorkflowActive(false);
           setProjectStatus("error");

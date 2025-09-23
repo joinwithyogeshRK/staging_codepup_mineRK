@@ -53,6 +53,7 @@ import BlankApp from "../../components/BlankApp";
 // Close upload menu when clicking outside
 
 import { amplitude } from "../../utils/amplitude";
+import { useToast } from "../../helper/Toast";
 import ChatSection from "./component/ChatSection";
 import PreviewContent from "./component/PreviewSection";
 
@@ -455,9 +456,7 @@ const ChatPage: React.FC = () => {
             {typeof have === "number" && typeof need === "number" ? (
               <>
                 You have{" "}
-                <span className="font-bold text-slate-900">{have}</span> tokens,
-                need <span className="font-bold text-slate-900">{need}</span>{" "}
-                tokens.
+                <span className="font-bold text-slate-900">{have}</span> tokens.
               </>
             ) : (
               <>You do not have enough tokens to perform this action.</>
@@ -506,8 +505,7 @@ const ChatPage: React.FC = () => {
           {typeof have === "number" && typeof need === "number" ? (
             <>
               You have <span className="font-bold text-slate-900">{have}</span>{" "}
-              tokens, need{" "}
-              <span className="font-bold text-slate-900">{need}</span> tokens.
+              tokens.
             </>
           ) : (
             <>You do not have enough tokens to perform this action.</>
@@ -762,31 +760,8 @@ const ChatPage: React.FC = () => {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [toggleChatSidebar]);
 
-  interface Toast {
-    id: string;
-    message: string;
-    type: "success" | "error";
-    duration?: number;
-  }
-  const [toasts, setToasts] = useState<Toast[]>([]);
-  // Toast notification functions
-  const showToast = (
-    message: string,
-    type: "success" | "error",
-    duration: number = 4000
-  ) => {
-    const id = Math.random().toString(36).substr(2, 9);
-    const newToast: Toast = { id, message, type, duration };
-
-    setToasts((prev) => [...prev, newToast]);
-
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((toast) => toast.id !== id));
-    }, duration);
-  };
-  const removeToast = (id: string) => {
-    setToasts((prev) => prev.filter((toast) => toast.id !== id));
-  };
+  // Global toast
+  const { showToast } = useToast();
   return (
     <>
       {/* Toast Notifications */}

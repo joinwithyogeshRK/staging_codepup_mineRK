@@ -176,7 +176,7 @@ export default function GitHubModel({ projectId, clerkId }: GitHubModelProps) {
   const handleLogin = async () => {
     if (!GITHUB_CLIENT_ID || !clerkId) {
       showToast(
-        "Configuration error - missing GitHub Client ID or Clerk ID",
+        "Configuration error",
         "error"
       );
       return;
