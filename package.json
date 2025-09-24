@@ -21,6 +21,7 @@
     "clsx": "^2.1.1",
     "dotenv": "^16.5.0",
     "drizzle-orm": "^0.44.2",
+    "hashids": "^2.3.0",
     "lucide-react": "^0.515.0",
     "motion": "^12.18.1",
     "pdfjs-dist": "^5.4.149",

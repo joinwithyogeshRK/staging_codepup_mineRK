@@ -9,6 +9,7 @@ import type {
   WorkflowMessage,
   DesignChoices,
 } from "../types/types";
+import { encodeId } from "@/utils/hashids";
 
 interface UseProjectWorkflowParams {
   dbUser: DbUser | null;
@@ -151,7 +152,9 @@ export function useProjectWorkflow({
           }
 
           // Navigate directly to chatpage (equivalent to generateApplication)
-          navigate("/chatPage", {
+          
+          const encodeIdParams = encodeId(projectId);
+          navigate(`/chatPage/${encodeIdParams}`, {
             state: {
               projectId: projectId,
               existingProject: true,

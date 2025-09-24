@@ -81,6 +81,7 @@ import type {
 } from "./components/types/types";
 import { useEvaluateRewards } from "./components/hooks/useEvaluateRewards";
 import AnimatedTitle from "./components/AnimatedTitle";
+import { encodeId , decodeId } from "@/utils/hashids";
 
 // --- Constants ---
 const BASE_URL = import.meta.env.VITE_BASE_URL;
@@ -328,7 +329,8 @@ const Index = () => {
   // Updated handleProjectClick to pass Supabase config
   const handleProjectClick = useCallback(
     (project: Project) => {
-      navigate("/chatPage", {
+      const encodeIdParams = encodeId(project.id);
+      navigate(`/chatPage/${encodeIdParams}`, {
         state: {
           projectId: project.id,
           existingProject: true,
@@ -356,7 +358,8 @@ const Index = () => {
   const handleContinueChat = useCallback(
     (project: Project, e: React.MouseEvent<HTMLButtonElement>) => {
       e.stopPropagation();
-      navigate("/chatPage", {
+      const encodeIdParams = encodeId(project.id);
+      navigate(`/chatPage/${encodeIdParams}`, {
         state: {
           projectId: project.id,
           existingProject: true,
@@ -526,9 +529,9 @@ const Index = () => {
       setShowSupabaseConfig(true);
       return;
     }
-
+    const encodeIdParams = encodeId(currentProjectId);
     // ✅ Navigate to chatPage with the existing project (like the old flow)
-    navigate("/chatPage", {
+    navigate(`/chatPage/${encodeIdParams}`, {
       state: {
         projectId: currentProjectId,
         existingProject: true,
