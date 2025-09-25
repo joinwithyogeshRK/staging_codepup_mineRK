@@ -157,22 +157,6 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
           </div>
         )}
 
-        {/* Project Overlay on hover */}
-        <div className="project-overlay group-hover:opacity-100">
-          {designChoices && onPreviewDesign && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onPreviewDesign(designChoices);
-              }}
-              className="preview-button"
-            >
-              <Eye className="size-icon-small" />
-              Preview
-            </button>
-          )}
-          <span className="project-overlay-text">Open Project</span>
-        </div>
       </div>
 
       {/* Project Info */}

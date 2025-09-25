@@ -1,17 +1,17 @@
 import React from "react";
-import { 
-  Loader2, 
-  Code, 
-  AlertCircle, 
-  Plus, 
-  Send, 
+import {
+  Loader2,
+  Code,
+  AlertCircle,
+  Plus,
+  Send,
   FileText,
   Palette,
   Database,
   Monitor,
   Rocket,
   CheckCircle,
-  Globe
+  Globe,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -20,6 +20,8 @@ import UnifiedFileUploadSection from "../../../components/UnifiedFileUpload";
 import type { UnifiedFileUploadRef } from "../../../components/UnifiedFileUpload";
 import Credit from "../../../components/Credit";
 import { useToast } from "../../../helper/Toast";
+import { Link } from "react-router-dom";
+import ShareSection from "./ShareSection";
 
 interface Message {
   id: string;
@@ -36,18 +38,18 @@ interface ChatSectionProps {
   isNarrow: boolean;
   leftWidthPct: number;
   toggleChatSidebar: () => void;
-  
+
   // Message props
   messages: Message[];
   messagesEndRef: React.RefObject<HTMLDivElement | null>; // Fixed: Added | null
-  
+
   // Input props
   prompt: string;
   handlePromptChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
   handleKeyPress: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   handlePaste: (e: React.ClipboardEvent<HTMLTextAreaElement>) => void;
   handleSubmit: () => void;
-  
+
   // File upload props
   uploadMode: "images" | "docs" | "assets";
   selectedImages: File[];
@@ -65,19 +67,26 @@ interface ChatSectionProps {
   clearSelectedAssets: () => void;
   showUploadMenu: boolean;
   toggleUploadMenu: () => void;
-  selectUploadMode: (mode: "images" | "docs" | "assets", skipClear?: boolean) => void;
+  selectUploadMode: (
+    mode: "images" | "docs" | "assets",
+    skipClear?: boolean
+  ) => void;
   showDocsInput: boolean;
   setShowDocsInput: React.Dispatch<React.SetStateAction<boolean>>;
-  
+
   // Clipboard props
   clipboardImage: File | null;
   clipboardSelectedOption: "images" | "assets"; // Fixed: Changed from string to specific union type
   hoveredOption: "images" | "assets" | null; // Fixed: Changed from string | null to specific union type
-  setHoveredOption: React.Dispatch<React.SetStateAction<"images" | "assets" | null>>; // Fixed: Updated type
+  setHoveredOption: React.Dispatch<
+    React.SetStateAction<"images" | "assets" | null>
+  >; // Fixed: Updated type
   setClipboardImage: React.Dispatch<React.SetStateAction<File | null>>;
-  setClipboardSelectedOption: React.Dispatch<React.SetStateAction<"images" | "assets">>; // Fixed: Updated type
+  setClipboardSelectedOption: React.Dispatch<
+    React.SetStateAction<"images" | "assets">
+  >; // Fixed: Updated type
   uploadFilesToDatabaseHelper: (files: File[]) => Promise<void>;
-  
+
   // Status props
   isLoading: boolean;
   projectStatus: string;
@@ -92,7 +101,7 @@ interface ChatSectionProps {
   isAgentActivating: boolean;
   deployError: string | null;
   setDeployError: React.Dispatch<React.SetStateAction<string | null>>;
-  
+
   // Project props
   currentProject: any;
   existingProject: boolean | undefined; // Fixed: Added | undefined
@@ -100,11 +109,15 @@ interface ChatSectionProps {
   currentWorkflowStep: string;
   workflowProgress: number;
   projectId: number | undefined;
-  
+
   // Toast
-  showToast: (message: string, type: "success" | "error", duration?: number) => void;
+  showToast: (
+    message: string,
+    type: "success" | "error",
+    duration?: number
+  ) => void;
   getToken: () => Promise<string | null>;
-  
+
   // Credits and Share props
   credits: number | null;
   shareAbleUrl: string;
@@ -112,7 +125,6 @@ interface ChatSectionProps {
   setShowPublishMenu: React.Dispatch<React.SetStateAction<boolean>>;
   handleDeploy: () => void;
   canDeploy: boolean | number | undefined;
-  deploymentUrl: string | null;
 }
 
 const ChatSection: React.FC<ChatSectionProps> = ({
@@ -180,7 +192,6 @@ const ChatSection: React.FC<ChatSectionProps> = ({
   setShowPublishMenu,
   handleDeploy,
   canDeploy,
-  deploymentUrl,
 }) => {
   const { showToast: globalShowToast } = useToast();
   const notify = showToast || globalShowToast;
@@ -196,8 +207,8 @@ const ChatSection: React.FC<ChatSectionProps> = ({
       <div className="header-bar">
         <div className="flex items-center justify-between w-full h-10">
           <div className="flex items-center h-8">
-            <a
-              href="/"
+            <Link
+              to="/"
               className="text-base font-semibold text-strong flex items-center gap-2 h-8"
             >
               <img
@@ -206,7 +217,7 @@ const ChatSection: React.FC<ChatSectionProps> = ({
                 className="w-6 h-6 object-contain"
               />
               CodePup
-            </a>
+            </Link>
           </div>
           <div className="flex items-center gap-2 h-8">
             {/* Credits and Share buttons - Medium and Large devices only (below lg) */}
@@ -217,84 +228,14 @@ const ChatSection: React.FC<ChatSectionProps> = ({
               </div>
 
               {/* Share Button */}
-              <div className="flex relative items-center h-8" data-chat-publish-menu>
-                <button
-                  onClick={() => setShowPublishMenu((prev) => !prev)}
-                  className="btn-publish-primary h-8 px-3 rounded-md"
-                  title="Publish options"
-                >
-                  <div className="flex items-center gap-2">
-                    <Rocket className="w-3 h-3" />
-                    <span className="text-xs">Share</span>
-                  </div>
-                </button>
-                {showPublishMenu && (
-                  <>
-                    <div
-                      className="publish-overlay"
-                      onMouseDown={() => setShowPublishMenu(false)}
-                    />
-                    <div
-                      className="publish-dropdown z-dropdown fade-slide-in"
-                      onAnimationEnd={(e) =>
-                        e.currentTarget.classList.remove("fade-slide-in")
-                      }
-                    >
-                      <div
-                        className="publish-dropdown-content"
-                        onMouseDown={(e) => e.stopPropagation()}
-                      >
-                        <div>
-                          <div className="publish-dropdown-title">
-                            Publish
-                          </div>
-                          <div className="publish-dropdown-desc">
-                            Deploy your project and track its performance.
-                          </div>
-                        </div>
-                        {shareAbleUrl && (
-                          <div className="publish-preview">
-                            <Globe className="w-4 h-4 text-slate-600 mt-0.5" />
-                            <div className="flex-1 min-w-0">
-                              <div className="publish-preview-title">
-                                Preview
-                              </div>
-                              <a
-                                className="publish-preview-link"
-                                href={shareAbleUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                {shareAbleUrl}
-                              </a>
-                            </div>
-                          </div>
-                        )}
-                        <div className="pt-1">
-                          <button
-                            onClick={() => {
-                              handleDeploy();
-                            }}
-                            className="btn-publish-primary w-full"
-                            disabled={
-                              isDeploying || (!canDeploy && !deploymentUrl)
-                            }
-                          >
-                            {isDeploying ? (
-                              <div className="flex items-center justify-center gap-2">
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                                <span className="text-xs">Generating shareable URL...</span>
-                              </div>
-                            ) : (
-                              <span className="text-sm font-medium">Generate shareable URL</span> 
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
+              <ShareSection
+                showPublishMenu={showPublishMenu}
+                setShowPublishMenu={setShowPublishMenu}
+                shareAbleUrl={shareAbleUrl}
+                handleDeploy={handleDeploy}
+                isDeploying={isDeploying}
+                canDeploy={canDeploy}
+              />
             </div>
 
             {/* Toggle Chat Sidebar Button */}
@@ -434,8 +375,7 @@ const ChatSection: React.FC<ChatSectionProps> = ({
                 // Check if this is an assistant message and if we should show the logo
                 const shouldShowLogo =
                   message.type === "assistant" &&
-                  (index === 0 ||
-                    messages[index - 1]?.type !== "assistant");
+                  (index === 0 || messages[index - 1]?.type !== "assistant");
 
                 return (
                   <div
@@ -486,7 +426,13 @@ const ChatSection: React.FC<ChatSectionProps> = ({
                           )}
                         </div>
                       )}
-                      <div className={`${message.type === "assistant" ? "text-muted " : "text-strong"} text-sm flex-1 min-w-0 overflow-hidden`}>
+                      <div
+                        className={`${
+                          message.type === "assistant"
+                            ? "text-muted "
+                            : "text-strong"
+                        } text-sm flex-1 min-w-0 overflow-hidden`}
+                      >
                         <div className="whitespace-pre-wrap break-words word-wrap-break-word overflow-wrap-anywhere">
                           {/* Render message content as markdown with custom styling */}
                           <ReactMarkdown
@@ -552,10 +498,7 @@ const ChatSection: React.FC<ChatSectionProps> = ({
                               },
                               // Blockquotes - left border with italic text
                               blockquote: ({ children, ...props }) => (
-                                <blockquote
-                                  {...props}
-                                  className="blockquote"
-                                >
+                                <blockquote {...props} className="blockquote">
                                   {children}
                                 </blockquote>
                               ),
@@ -750,10 +693,7 @@ const ChatSection: React.FC<ChatSectionProps> = ({
                 const maxHeight = 12 * 16;
 
                 // Set height based on content, but don't exceed max
-                const newHeight = Math.min(
-                  textarea.scrollHeight,
-                  maxHeight
-                );
+                const newHeight = Math.min(textarea.scrollHeight, maxHeight);
                 textarea.style.height = newHeight + "px";
               }}
               placeholder={
@@ -825,9 +765,7 @@ const ChatSection: React.FC<ChatSectionProps> = ({
                         </div>
                         <div className="flex items-center gap-2 mb-2">
                           {clipboardImage.type === "application/pdf" ||
-                          clipboardImage.name
-                            .toLowerCase()
-                            .endsWith(".pdf") ? (
+                          clipboardImage.name.toLowerCase().endsWith(".pdf") ? (
                             // Show PDF icon for PDF files
                             <div className="w-8 h-8 bg-red-100 rounded border border-strong flex items-center justify-center">
                               <FileText className="w-4 h-4 text-red-600" />

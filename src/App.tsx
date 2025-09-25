@@ -11,6 +11,7 @@ import ProjectGallery from "./components/ProjectGallery";
 import IndividualPost from "./components/HackathonPost";
 import UserDashboard from "./components/UserDashboard";
 import HackathonOverComponent from "./pages/HackathonCompletionPage";
+import NotFoundPage from "./pages/NotFoundPage";
 
 function App() {
   return (
@@ -19,8 +20,9 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/chatPage" element={<ChatPage />} />
+          <Route path="/chatPage/:projectId" element={<ChatPage />} />
           {/* <Route path="/hackathon" element={<Hackathon />} /> */}
+          <Route path="/chatPage" element={<NotFoundPage />} />
 
           <Route path="/hackathon" element={<HackathonOverComponent/>} />
           <Route path="/submit" element={<HackathonShowcase />} />
