@@ -413,7 +413,6 @@ export const useChatPageLogic = (
     }
   }, [passedUserId]);
   // In hooks/useChatPage.ts
-  // FIND your existing sendModificationRequest function and REPLACE it with this:
 
   const sendModificationRequest = useCallback(
     async (
@@ -1143,12 +1142,6 @@ export const useChatPageLogic = (
             ...prev,
             endTime: Date.now(),
           }));
-          // Refresh credits and project after generation completes
-          fetchCredits();
-          if (projId) {
-            // Re-fetch project details to get the authoritative deploymentUrl
-            loadProject(projId);
-          }
           break;
 
         case "result":
@@ -1195,6 +1188,11 @@ export const useChatPageLogic = (
             };
             setMessages((prev) => [...prev, completionMessage]);
 
+            // Immediately set previewUrl from streaming result to load iframe without extra fetch
+            if (data.result.previewUrl) {
+              setPreviewUrl(data.result.previewUrl);
+            }
+
             if (data.result.projectId) {
               setCurrentProjectInfo({
                 id: data.result.projectId,
@@ -1213,11 +1211,11 @@ export const useChatPageLogic = (
               setShowCodeStream(false);
             }, 3000);
 
-            // Refresh credits and reload project for authoritative deploymentUrl
+            // Refresh credits only. Skip refetching project details here to avoid delaying iframe load.
             fetchCredits();
-            if (data.result.projectId) {
-              loadProject(data.result.projectId);
-            }
+            // if (data.result.projectId) {
+            //   loadProject(data.result.projectId);
+            // }
           }
           break;
 
@@ -2093,45 +2091,6 @@ export const useChatPageLogic = (
     ]
   );
 
-  // Utility functions
-  const clearConversation = useCallback(async () => {
-    // RESET the stop flag when clearing conversation
-    setHasUserStopped(false);
-    if (projectId) {
-      try {
-        const token = await getToken();
-        await axios.delete(`${baseUrl}/api/messages/project/${projectId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        setMessages([]);
-        setWorkflowSteps([]);
-        setIsWorkflowActive(false);
-        setWorkflowProgress(0);
-        resetStreamingState();
-      } catch (error) {
-        setError("Failed to clear conversation");
-      }
-    } else {
-      setMessages([]);
-      setWorkflowSteps([]);
-      setIsWorkflowActive(false);
-      setWorkflowProgress(0);
-      resetStreamingState();
-    }
-  }, [
-    baseUrl,
-    projectId,
-    resetStreamingState,
-    setMessages,
-    setWorkflowSteps,
-    setIsWorkflowActive,
-    setWorkflowProgress,
-    setError,
-    setHasUserStopped,
-  ]);
-
   // Add this ref near other refs
   const isStoppingRef = useRef(false);
 
@@ -2911,7 +2870,6 @@ export const useChatPageLogic = (
     loadProjectMessages,
     startStreamingFrontendGeneration,
     startCompleteWorkflow,
-    clearConversation,
     stopWorkflow,
     handlePromptChange,
     handleSubmit,

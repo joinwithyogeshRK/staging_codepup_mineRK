@@ -111,7 +111,9 @@ const ChatPage: React.FC = () => {
   const checkContainerStatus = useCallback(
     async (url: string): Promise<boolean> => {
       try {
-        const res = await axios.head(url);
+        const res = await axios.head(url, {
+          timeout: 5000, // 5 second timeout
+        });
         const isUp = res.status === 200;
         return isUp;
       } catch (error) {
@@ -281,7 +283,8 @@ const ChatPage: React.FC = () => {
       setIsCheckingContainer(false);
       return;
     }
-    if (isWorkflowActive || isStreamingGeneration || isStreamingModification) {
+    // If previewUrl likely came from stream (immediate render path), skip HEAD check for first paint
+    if (isWorkflowActive || isStreamingGeneration) {
       setIsCheckingContainer(false);
       return;
     }
@@ -302,7 +305,6 @@ const ChatPage: React.FC = () => {
     previewUrl,
     isWorkflowActive,
     isStreamingGeneration,
-    isStreamingModification,
     checkContainerStatus,
   ]);
 
@@ -349,7 +351,6 @@ const ChatPage: React.FC = () => {
   const {
     // Functions
     scrollToBottom,
-    clearConversation,
     stopWorkflow,
     handlePromptChange,
     handleSubmit,

@@ -20,6 +20,7 @@ import UnifiedFileUploadSection from "../../../components/UnifiedFileUpload";
 import type { UnifiedFileUploadRef } from "../../../components/UnifiedFileUpload";
 import Credit from "../../../components/Credit";
 import { useToast } from "../../../helper/Toast";
+import { Link } from "react-router-dom";
 
 interface Message {
   id: string;
@@ -196,8 +197,8 @@ const ChatSection: React.FC<ChatSectionProps> = ({
       <div className="header-bar">
         <div className="flex items-center justify-between w-full h-10">
           <div className="flex items-center h-8">
-            <a
-              href="/"
+            <Link
+              to="/"
               className="text-base font-semibold text-strong flex items-center gap-2 h-8"
             >
               <img
@@ -206,7 +207,7 @@ const ChatSection: React.FC<ChatSectionProps> = ({
                 className="w-6 h-6 object-contain"
               />
               CodePup
-            </a>
+            </Link>
           </div>
           <div className="flex items-center gap-2 h-8">
             {/* Credits and Share buttons - Medium and Large devices only (below lg) */}

@@ -1,123 +1,62 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { motion } from "framer-motion";
-import { Home, Search, RefreshCw } from "lucide-react";
-
+import { Home } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export default function NotFoundPage() {
   const navigate = useNavigate();
-  const [query, setQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [hintIndex, setHintIndex] = useState(0);
-
-  const hints = [
-    "Try the homepage — it's usually a good start",
-    "Check the URL for typos",
-    "Use the site search to find a similar page",
-  ];
-
-  useEffect(() => {
-    const t = setInterval(() => setHintIndex((i) => (i + 1) % hints.length), 4200);
-    return () => clearInterval(t);
-  }, []);
-
-  useEffect(() => {
-    if (!query.trim()) return setSuggestions([]);
-    const q = query.toLowerCase();
-    const pool = [
-      "/",
-      "/login",
-      "/signup",
-      "/dashboard",
-      "/blog",
-      "/pricing",
-    ];
-    setSuggestions(pool.filter((p) => p.includes(q)).slice(0, 5));
-  }, [query]);
 
   function goHome() {
     navigate("/");
   }
 
-  function trySuggestion(path: string) {
-    navigate(path);
-  }
-
-  function refresh() {
-    setQuery("");
-    setSuggestions([]);
-  }
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-50 via-rose-50 to-amber-50 p-6 relative overflow-hidden">
+      {/* Decorative paw prints */}
+      <div className="pointer-events-none absolute inset-0 opacity-10">
+        <div className="absolute -left-10 top-16 rotate-12">
+          <img src="/favicon.ico" alt="Paw" className="w-12 h-12" />
+        </div>
+        <div className="absolute left-24 top-40 -rotate-6">
+          <img src="/favicon.ico" alt="Paw" className="w-10 h-10" />
+        </div>
+        <div className="absolute right-10 bottom-24 rotate-6">
+          <img src="/favicon.ico" alt="Paw" className="w-14 h-14" />
+        </div>
+        <div className="absolute right-24 top-10 -rotate-12">
+          <img src="/favicon.ico" alt="Paw" className="w-9 h-9" />
+        </div>
+      </div>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="max-w-4xl w-full bg-white shadow-xl rounded-2xl p-8 grid grid-cols-1 md:grid-cols-2 gap-6 items-center"
+        className="max-w-4xl w-full bg-white/80 backdrop-blur-md shadow-xl rounded-2xl p-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-center border border-white/60"
       >
         <div className="space-y-6">
           <div className="flex items-center gap-3">
-            <div className="w-16 h-16 flex items-center justify-center rounded-xl bg-gradient-to-r from-indigo-500 to-pink-500 text-white text-2xl font-bold">
+            <div className="w-16 h-16 px-3 flex items-center justify-center rounded-xl bg-gradient-to-r from-sky-500 to-pink-500 text-white text-2xl font-bold">
               404
             </div>
             <div>
-              <h1 className="text-2xl md:text-3xl font-semibold">Page not found</h1>
-              <p className="text-sm text-slate-500">We couldn't find the page you're looking for.</p>
+              <h1 className="text-2xl md:text-3xl font-semibold">Oops! Our pup got distracted chasing a squirrel 🐕💨</h1>
+              <p className="text-sm text-slate-600">The page you’re sniffing for isn’t here.</p>
             </div>
           </div>
 
-          <p className="text-slate-600">{hints[hintIndex]}</p>
+          <div className="flex items-center gap-3">
+            <p className="text-slate-700">Let’s get you back to a comfy spot.</p>
+          </div>
 
-          <div className="flex gap-3 flex-wrap">
+          <div className="pt-2">
             <button
               onClick={goHome}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl shadow-sm hover:shadow-md transition"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl shadow-sm hover:shadow-md transition bg-sky-600 text-white hover:bg-sky-700"
             >
               <Home size={16} /> Take me home
             </button>
-
-            <button
-              onClick={refresh}
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border hover:bg-slate-50 transition"
-            >
-              <RefreshCw size={14} /> Try again
-            </button>
           </div>
-
-          <div className="mt-2">
-            <label className="text-xs text-slate-500">Search this site</label>
-            <div className="mt-2 flex items-center gap-2">
-              <Search size={16} className="opacity-70" />
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search pages, e.g. 'blog' or 'pricing'"
-                className="flex-1 outline-none px-3 py-2 rounded-lg border focus:border-indigo-400"
-              />
-            </div>
-
-            {suggestions.length > 0 && (
-              <motion.ul
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="mt-2 space-y-2 bg-slate-50 p-3 rounded-lg"
-              >
-                {suggestions.map((s) => (
-                  <li key={s}>
-                    <button
-                      onClick={() => trySuggestion(s)}
-                      className="w-full text-left p-2 rounded-md hover:bg-white/60"
-                    >
-                      {s}
-                    </button>
-                  </li>
-                ))}
-              </motion.ul>
-            )}
-          </div>
-
-          <div className="text-xs text-slate-400">If you're a dev: check your routes — sometimes the path changed.</div>
         </div>
 
         <motion.div
@@ -126,23 +65,25 @@ export default function NotFoundPage() {
           transition={{ type: "spring", stiffness: 80 }}
           className="flex-1 flex flex-col items-center justify-center"
         >
+          {/* Lost bot animation (kept) */}
           <motion.div
             whileHover={{ y: -8 }}
-            className="relative w-64 h-64 rounded-2xl bg-gradient-to-tr from-indigo-50 to-pink-50 flex items-center justify-center"
+            className="relative w-64 h-64 rounded-2xl bg-gradient-to-tr from-sky-50 to-pink-50 flex items-center justify-center"
           >
             <motion.div
               animate={{ rotate: [0, -6, 6, 0] }}
               transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
               className="w-40 h-40 rounded-xl bg-white/90 shadow-lg flex items-center justify-center flex-col"
             >
-              <div className="text-4xl font-extrabold">🤖</div>
-              <div className="text-sm text-slate-600">Lost bot</div>
+              {/* <div className="text-4xl">🤖</div> */}
+              <img src="main.png" className="h-24" />
+              <div className="text-sm text-slate-600">Lost puppy</div>
             </motion.div>
 
             <motion.span
               animate={{ x: [ -60, -40, -20, -60 ] }}
               transition={{ repeat: Infinity, duration: 4 }}
-              className="absolute left-6 top-6 w-3 h-3 rounded-full bg-indigo-300"
+              className="absolute left-6 top-6 w-3 h-3 rounded-full bg-sky-300"
             />
             <motion.span
               animate={{ x: [ 40, 20, 10, 40 ] }}
@@ -151,8 +92,10 @@ export default function NotFoundPage() {
             />
           </motion.div>
 
-          <div className="mt-6 w-full text-center text-sm text-slate-500">
-            Tip: Press <kbd className="border rounded px-2 py-1 bg-white">Esc</kbd> to focus search
+          {/* Small puppy hint */}
+          <div className="mt-4 flex items-center gap-2 text-xs text-slate-500">
+            <img src="/favicon.ico" alt="Paw" className="w-4 h-4" />
+            <span>Tip: Head home — we’ll guide you from there.</span>
           </div>
         </motion.div>
       </motion.div>
