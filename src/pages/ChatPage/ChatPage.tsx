@@ -56,6 +56,8 @@ import { amplitude } from "../../utils/amplitude";
 import { useToast } from "../../helper/Toast";
 import ChatSection from "./component/ChatSection";
 import PreviewContent from "./component/PreviewSection";
+import { useDeployStore } from "@/store/deployAndPublish/store";
+import ShareSection from "./component/ShareSection";
 
 const ChatPage: React.FC = () => {
   const context = useContext(MyContext);
@@ -76,9 +78,7 @@ const ChatPage: React.FC = () => {
 
   // Deploy state
   const [isDeploying, setIsDeploying] = useState(false);
-  const [deploymentUrl, setDeploymentUrl] = useState<string | null>(null);
   const [deployError, setDeployError] = useState<string | null>(null);
-  const [lastDeployTime, setLastDeployTime] = useState<Date | null>(null);
   const [showPublishMenu, setShowPublishMenu] = useState(false);
   const [showChatPublishMenu, setShowChatPublishMenu] = useState(false);
 
@@ -323,30 +323,37 @@ const ChatPage: React.FC = () => {
   useEffect(() => {
     // Only apply this logic on mobile/medium devices (isNarrow)
     if (!isNarrow) return;
-    
+
     // Show preview section when:
     // 1. Preview URL is available
     // 2. Container is online (iframe is loaded and working)
     // 3. Not currently in a workflow or streaming state
     if (
-      previewUrl && 
-      isContainerOnline === true && 
-      !isWorkflowActive && 
-      !isStreamingGeneration && 
+      previewUrl &&
+      isContainerOnline === true &&
+      !isWorkflowActive &&
+      !isStreamingGeneration &&
       !isStreamingModification
     ) {
       setIsChatHidden(true); // Hide chat to show preview
     }
     // Switch back to chat when iframe becomes unavailable
     else if (
-      (!previewUrl || isContainerOnline === false) && 
-      !isWorkflowActive && 
-      !isStreamingGeneration && 
+      (!previewUrl || isContainerOnline === false) &&
+      !isWorkflowActive &&
+      !isStreamingGeneration &&
       !isStreamingModification
     ) {
       setIsChatHidden(false); // Show chat when preview is not available
     }
-  }, [isNarrow, previewUrl, isContainerOnline, isWorkflowActive, isStreamingGeneration, isStreamingModification]);
+  }, [
+    isNarrow,
+    previewUrl,
+    isContainerOnline,
+    isWorkflowActive,
+    isStreamingGeneration,
+    isStreamingModification,
+  ]);
   const { getToken } = useAuth();
   const {
     // Functions
@@ -575,78 +582,38 @@ const ChatPage: React.FC = () => {
     }
   }, [isStreamingModification, streamingData?.type]);
 
-  // Deploy function
+  // Deploy store selectors (reactive)
+  const isDeployingStore = useDeployStore((s) => s.isDeploying);
+  const deployedUrlStore = useDeployStore((s) => s.deployedUrl);
+  const deployErrorStore = useDeployStore((s) => s.error);
+  const startDeployStore = useDeployStore((s) => s.startDeploy);
+
+  // Deploy function (Zustand-backed)
   const handleDeploy = useCallback(async () => {
     if (!projectId) {
-      // setDeployError("No project ID available for deployment");
       showToast(`No project ID available for deployment`, "error");
       return;
     }
     amplitude.track("Publish Button Clicked");
 
-    setIsDeploying(true);
-    // setDeployError(null);
-    setDeploymentUrl(null);
+    // Add deployment message to chat once
+    const deployMessage = {
+      id: uuidv4(),
+      type: "assistant" as const,
+      content: `Starting deployment for project.`,
+      timestamp: new Date(),
+      workflowStep: "Deployment",
+    };
+    setMessages((prev: any) => [...prev, deployMessage]);
 
     try {
-      // Add deployment message to chat
-      const deployMessage = {
-        id: uuidv4(),
-        type: "assistant" as const,
-        content: `Starting deployment for project.`,
-        timestamp: new Date(),
-        workflowStep: "Deployment",
-      };
-      setMessages((prev: any) => [...prev, deployMessage]);
-
       const token = await getToken();
-      const response = await fetch(
-        `${import.meta.env.VITE_BASE_URL}/api/design/build-and-deploy`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            projectId: projectId,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`Deployment failed: ${response.statusText}`);
-      }
-
-      const deployedUrl = await response.json();
-
-      setShareAbleUrl(deployedUrl);
-      setDeploymentUrl(deployedUrl);
-      setLastDeployTime(new Date());
-
-      // Hide success message after 1 second
-      setTimeout(() => {
-        setDeploymentUrl(null);
-      }, 1000);
-
-      // Add success message to chat
-      const successMessage = {
-        id: uuidv4(),
-        type: "assistant" as const,
-        content: `✅ Deployment completed successfully! Your app is now live at: ${deployedUrl}`,
-        timestamp: new Date(),
-        workflowStep: "Deployment Complete",
-      };
-      setMessages((prev: any) => [...prev, successMessage]);
-
-      // Do NOT change iframe URL on publish; keep current deploymentUrl
+      if (!token) throw new Error("Missing auth token");
+      await startDeployStore(projectId, token);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown deployment error";
-      // setDeployError(errorMessage);
       showToast(`${errorMessage}`, "error");
-
-      // Add error message to chat
       const errorChatMessage = {
         id: uuidv4(),
         type: "assistant" as const,
@@ -655,10 +622,37 @@ const ChatPage: React.FC = () => {
         workflowStep: "Deployment Error",
       };
       setMessages((prev: any) => [...prev, errorChatMessage]);
-    } finally {
-      setIsDeploying(false);
     }
-  }, [projectId, setMessages, setPreviewUrl]);
+  }, [projectId, getToken, startDeployStore, setMessages]);
+
+  // Reflect store success into UI (share URL + chat)
+  useEffect(() => {
+    if (deployedUrlStore) {
+      setShareAbleUrl(deployedUrlStore);
+      const successMessage = {
+        id: uuidv4(),
+        type: "assistant" as const,
+        content: `✅ Deployment completed successfully! Your app is now live at: ${deployedUrlStore}`,
+        timestamp: new Date(),
+        workflowStep: "Deployment Complete",
+      };
+      setMessages((prev: any) => [...prev, successMessage]);
+    }
+  }, [deployedUrlStore, setMessages]);
+
+  // Reflect store error into chat
+  useEffect(() => {
+    if (deployErrorStore) {
+      const errorChatMessage = {
+        id: uuidv4(),
+        type: "assistant" as const,
+        content: `❌ ${deployErrorStore}`,
+        timestamp: new Date(),
+        workflowStep: "Deployment Error",
+      };
+      setMessages((prev: any) => [...prev, errorChatMessage]);
+    }
+  }, [deployErrorStore, setMessages]);
 
   // Enhanced cache-busting URL generator
   // Removed cache-busting URL helper
@@ -669,12 +663,6 @@ const ChatPage: React.FC = () => {
   // Generate cache-busted preview URL
   // Always use raw deploymentUrl without cache busting
 
-  // Format countdown time as MM:SS
-  const formatCountdown = (seconds: number): string => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
-  };
 
   // Auto-scroll effect (on new messages and key streaming state changes)
   useEffect(() => {
@@ -837,7 +825,6 @@ const ChatPage: React.FC = () => {
           setShowPublishMenu={setShowChatPublishMenu}
           handleDeploy={handleDeploy}
           canDeploy={canDeploy}
-          deploymentUrl={deploymentUrl}
         />
         {/* Vertical divider for resizing */}
         {!isChatHidden && !isNarrow && (
@@ -967,84 +954,14 @@ const ChatPage: React.FC = () => {
                 </div>
 
                 {/* Share Button - Universal for all devices */}
-                <div className="flex relative items-center h-8" data-publish-menu>
-                  <button
-                    onClick={() => setShowPublishMenu((prev) => !prev)}
-                    className="btn-publish-primary h-8 px-3 rounded-md"
-                    title="Publish options"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Rocket className="w-3 h-3" />
-                      <span className="text-xs">Share</span>
-                    </div>
-                  </button>
-                  {showPublishMenu && (
-                    <>
-                      <div
-                        className="publish-overlay"
-                        onMouseDown={() => setShowPublishMenu(false)}
-                      />
-                      <div
-                        className="publish-dropdown z-dropdown fade-slide-in"
-                        onAnimationEnd={(e) =>
-                          e.currentTarget.classList.remove("fade-slide-in")
-                        }
-                      >
-                        <div
-                          className="publish-dropdown-content"
-                          onMouseDown={(e) => e.stopPropagation()}
-                        >
-                          <div>
-                            <div className="publish-dropdown-title">
-                              Publish
-                            </div>
-                            <div className="publish-dropdown-desc">
-                              Deploy your project and track its performance.
-                            </div>
-                          </div>
-                          {shareAbleUrl && (
-                            <div className="publish-preview">
-                              <Globe className="w-4 h-4 text-slate-600 mt-0.5" />
-                              <div className="flex-1 min-w-0">
-                                <div className="publish-preview-title">
-                                  Preview
-                                </div>
-                                <a
-                                  className="publish-preview-link"
-                                  href={shareAbleUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  {shareAbleUrl}
-                                </a>
-                              </div>
-                            </div>
-                          )}
-                          <div className="pt-1">
-                            <button
-                              onClick={() => {
-                                handleDeploy();
-                              }}
-                              className="btn-publish-primary w-full"
-                              disabled={
-                                isDeploying || (!canDeploy && !deploymentUrl)
-                              }
-                            >
-                              {isDeploying ? (
-                                <div className="flex items-center justify-center gap-2">
-                                  <Loader2 className="w-3 h-3 animate-spin" />
-                                  <span className="text-xs">Generating shareable URL...</span>
-                                </div>
-                              ) : (
-                                <span className="text-sm font-medium">Generate shareable URL</span> 
-                              )}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
+                <ShareSection
+                  showPublishMenu={showPublishMenu}
+                  setShowPublishMenu={setShowPublishMenu}
+                  shareAbleUrl={shareAbleUrl}
+                  handleDeploy={handleDeploy}
+                  isDeploying={isDeployingStore}
+                  canDeploy={canDeploy}
+                />
               </div>
             </div>
           </div>

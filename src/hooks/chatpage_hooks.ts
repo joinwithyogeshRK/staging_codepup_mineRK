@@ -1146,12 +1146,15 @@ export const useChatPageLogic = (
 
         case "result":
           if (data.result) {
-            // Do not trust/propagate previewUrl from stream; refetch project
             setProjectStatus("ready");
             setIsStreamingGeneration(false);
             setIsWorkflowActive(false);
             setWorkflowProgress(100);
 
+            // Immediately set previewUrl from streaming result to load iframe without extra fetch
+            if (data.result.previewUrl) {
+              setPreviewUrl(data.result.previewUrl);
+            }
             // **CRITICAL**: Mark Frontend Generation as completed and clear workflow state
             WorkflowStateManager.markStageCompleted(
               projId,
@@ -1188,10 +1191,6 @@ export const useChatPageLogic = (
             };
             setMessages((prev) => [...prev, completionMessage]);
 
-            // Immediately set previewUrl from streaming result to load iframe without extra fetch
-            if (data.result.previewUrl) {
-              setPreviewUrl(data.result.previewUrl);
-            }
 
             if (data.result.projectId) {
               setCurrentProjectInfo({
