@@ -56,7 +56,7 @@ import { amplitude } from "../../utils/amplitude";
 import { useToast } from "../../helper/Toast";
 import ChatSection from "./component/ChatSection";
 import PreviewContent from "./component/PreviewSection";
-import { useDeployStore } from "@/store/deployAndPublish/store";
+import { useDeployStore } from "@/store/deployAndPublish/deployAndPublishstore";
 import ShareSection from "./component/ShareSection";
 
 const ChatPage: React.FC = () => {
