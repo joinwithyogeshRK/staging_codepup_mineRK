@@ -772,7 +772,9 @@ export const useChatPageLogic = (
     try {
       const token = await getToken();
       if (token) {
-        await uploadFilesToDatabase(files, projectId, token);
+        const result = await uploadFilesToDatabase(files, projectId, token);
+        // We don't need to handle the result here since this is just for database storage
+        // The main workflow in Index.tsx handles the PDF enhancement logic
       }
     } catch (error) {
       // Don't show error to user as this is a background operation

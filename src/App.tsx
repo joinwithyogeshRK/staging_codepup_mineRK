@@ -22,13 +22,15 @@ function App() {
           <Route path="/" element={<Index />} />
           <Route path="/chatPage/:projectId" element={<ChatPage />} />
           {/* <Route path="/hackathon" element={<Hackathon />} /> */}
-          <Route path="/chatPage" element={<NotFoundPage />} />
 
           <Route path="/hackathon" element={<HackathonOverComponent/>} />
           <Route path="/submit" element={<HackathonShowcase />} />
           <Route path="/gallery" element={<ProjectGallery />} />
           <Route path="/project/:id" element={<IndividualPost />} />
           <Route path="/dashboard" element={<UserDashboard />} />
+
+          {/* Not Found */}
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </BrowserRouter>
       </ToastProvider>

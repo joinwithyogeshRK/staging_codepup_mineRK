@@ -8,10 +8,10 @@ export const uploadFilesToDatabase = async (
   files: File[],
   projectId: number,
   token: string
-): Promise<boolean> => {
+): Promise<{ success: boolean; data?: { message: string; projectId: string; files: Array<{ name: string; type: string; url: string }> } }> => {
   try {
     if (!files || files.length === 0) {
-      return false;
+      return { success: false };
     }
 
     const formData = new FormData();
@@ -34,12 +34,15 @@ export const uploadFilesToDatabase = async (
     );
 
     if (response.status === 200) {
-      return true;
+      return { 
+        success: true, 
+        data: response.data 
+      };
     } else {
-      return false;
+      return { success: false };
     }
   } catch (error) {
-    return false;
+    return { success: false };
   }
 };
 
@@ -48,12 +51,12 @@ export const uploadFilesToDatabase = async (
  * @param file - File to upload
  * @param projectId - Project ID to associate file with
  * @param token - Bearer authentication token
- * @returns Promise<boolean> - Success status
+ * @returns Promise<{ success: boolean; data?: { message: string; projectId: string; files: Array<{ name: string; type: string; url: string }> } }> - Success status and file data
  */
 export const uploadFileToDatabase = async (
   file: File,
   projectId: number,
   token: string
-): Promise<boolean> => {
+): Promise<{ success: boolean; data?: { message: string; projectId: string; files: Array<{ name: string; type: string; url: string }> } }> => {
   return uploadFilesToDatabase([file], projectId, token);
 };
