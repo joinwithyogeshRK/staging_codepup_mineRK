@@ -419,11 +419,17 @@ const Index = () => {
       setDesignChoices(null);
       setReadyToGenerate(false);
       await startAnalyzeWorkflow(currentProjectId, prompt);
+      // Clear files after starting workflow to prevent re-upload
+      setSelectedImages([]);
+      setSelectedPdfs([]);
       return;
     }
 
     if (workflowActive && currentProjectId && prompt.trim()) {
       await startAnalyzeWorkflow(currentProjectId, prompt);
+      // Clear files after continuing workflow to prevent re-upload
+      setSelectedImages([]);
+      setSelectedPdfs([]);
     }
   }, [
     dbUser,
@@ -933,7 +939,6 @@ const Index = () => {
                           setSelectedImages={setSelectedImages}
                           selectedProjectType={selectedProjectType}
                           isConfigValid={isConfigValid}
-                          showToast={showToast}
                           setSelectedPdfs={setSelectedPdfs}
                         />
 

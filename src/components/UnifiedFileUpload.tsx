@@ -5,21 +5,14 @@ import React, {
   useState,
   useCallback,
 } from "react";
-import * as pdfjsLib from "pdfjs-dist";
 import { uploadFilesToDatabase } from "../utils/fileUpload";
-
-// Use the most reliable CDN approach
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+import { extractImagesFromPdf, validatePdfFile } from "../utils/pdfExtraction";
+import { useToast } from "../helper/Toast";
 
 interface UnifiedFileUploadSectionProps {
   selectedFiles: File[];
   setSelectedFiles: React.Dispatch<React.SetStateAction<File[]>>;
   isConfigValid: boolean;
-  showToast: (
-    message: string,
-    type: "success" | "error",
-    duration?: number
-  ) => void;
   uploadMode: "images" | "docs";
   projectId?: number;
   getToken?: () => Promise<string | null>;
@@ -38,7 +31,6 @@ const UnifiedFileUploadSection = forwardRef<
       selectedFiles,
       setSelectedFiles,
       isConfigValid,
-      showToast,
       uploadMode,
       projectId,
       getToken,
@@ -47,6 +39,7 @@ const UnifiedFileUploadSection = forwardRef<
   ) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isProcessingPdf, setIsProcessingPdf] = useState(false);
+    const { showToast } = useToast();
 
     // Expose click method to parent
     useImperativeHandle(ref, () => ({
@@ -55,96 +48,6 @@ const UnifiedFileUploadSection = forwardRef<
       },
     }));
 
-    // Function to extract images from PDF (copied from ImageUploadSection)
-    const extractImagesFromPdf = async (pdfFile: File) => {
-      try {
-        setIsProcessingPdf(true);
-
-        const arrayBuffer = await pdfFile.arrayBuffer();
-
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-
-        // Check page limit
-        if (pdf.numPages > 5) {
-          showToast(
-            `PDF "${pdfFile.name}" has ${pdf.numPages} pages. Maximum 5 pages allowed.`,
-            "error"
-          );
-          return [];
-        }
-
-        const extractedImages = [];
-
-        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-          const page = await pdf.getPage(pageNum);
-          const viewport = page.getViewport({ scale: 1.5 });
-
-          // Create canvas to render PDF page
-          const canvas = document.createElement("canvas");
-          const context = canvas.getContext("2d")!;
-          canvas.height = viewport.height;
-          canvas.width = viewport.width;
-
-          // Render page to canvas
-          await page.render({
-            canvasContext: context!,
-            viewport: viewport,
-            canvas: canvas,
-          }).promise;
-
-          // Convert canvas to blob with better error handling
-          const blob = await new Promise<Blob>((resolve, reject) => {
-            canvas.toBlob(
-              (result) => {
-                if (result) {
-                  resolve(result);
-                } else {
-                  reject(new Error("Failed to convert canvas to blob"));
-                }
-              },
-              "image/png",
-              0.9
-            );
-          });
-
-          // Create a File object from the blob
-          const imageFile = new File(
-            [blob],
-            `${pdfFile.name}-page-${pageNum}.png`,
-            {
-              type: "image/png",
-              lastModified: Date.now(),
-            }
-          );
-          extractedImages.push(imageFile);
-        }
-
-        showToast(
-          `Successfully extracted ${extractedImages.length} images from PDF`,
-          "success"
-        );
-        return extractedImages;
-      } catch (error: unknown) {
-        
-        const errorMessage =
-          error instanceof Error ? error.message : String(error);
-
-        // More specific error messages
-        if (errorMessage.includes("Invalid PDF")) {
-          showToast(`"${pdfFile.name}" is not a valid PDF file`, "error");
-        } else if (errorMessage.includes("workerSrc")) {
-          showToast(
-            "PDF.js worker not properly configured. Please refresh and try again.",
-            "error"
-          );
-        } else {
-          showToast(`Failed to process PDF: ${errorMessage}`, "error");
-        }
-        return [];
-      } finally {
-        setIsProcessingPdf(false);
-      }
-    };
 
     const handleFileSelect = useCallback(
       async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -178,23 +81,27 @@ const UnifiedFileUploadSection = forwardRef<
 
           // Process PDF files if any
           if (pdfFiles.length > 0) {
-            showToast(
-              `Processing ${pdfFiles.length} PDF file(s)...`,
-              "success"
-            );
+            setIsProcessingPdf(true);
+            try {
+              showToast(
+                `Processing ${pdfFiles.length} PDF file(s)...`,
+                "success"
+              );
 
-            for (const pdfFile of pdfFiles) {
-              // Check file size (3.75MB limit)
-              if (pdfFile.size > 3.75 * 1024 * 1024) {
-                showToast(
-                  `PDF file "${pdfFile.name}" is too large. Maximum size is 3.75MB`,
-                  "error"
-                );
-                continue;
+              for (const pdfFile of pdfFiles) {
+                // Validate PDF file
+                if (!validatePdfFile(pdfFile, 3.75, 5, showToast)) {
+                  continue;
+                }
+
+                // Extract images from PDF using utility function
+                const result = await extractImagesFromPdf(pdfFile, 5, showToast);
+                if (result && result.extractedImages.length > 0) {
+                  allImageFiles = [...allImageFiles, ...result.extractedImages];
+                }
               }
-
-              const extractedImages = await extractImagesFromPdf(pdfFile);
-              allImageFiles = [...allImageFiles, ...extractedImages];
+            } finally {
+              setIsProcessingPdf(false);
             }
           }
 
@@ -240,7 +147,7 @@ const UnifiedFileUploadSection = forwardRef<
         // Clear the input
         e.target.value = "";
       },
-      [setSelectedFiles, showToast, uploadMode, extractImagesFromPdf]
+      [setSelectedFiles, showToast, uploadMode]
     );
 
     // Convert other document types to image (basic implementation)

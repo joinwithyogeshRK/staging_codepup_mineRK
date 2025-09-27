@@ -7,6 +7,8 @@ import { useAuth } from "@clerk/clerk-react";
 import { StreamingCodeParser } from "../pages/streaming";
 import { WorkflowStateManager } from "../utils/workflowStateManager";
 import { uploadFilesToDatabase } from "../utils/fileUpload";
+import { validateFile } from "../utils/fileValidation";
+import { extractImagesFromPdf, validatePdfFile } from "../utils/pdfExtraction";
 
 import type {
   Project,
@@ -55,22 +57,13 @@ export const useChatPageState = () => {
   const [workflowSteps, setWorkflowSteps] = useState<WorkflowStepData[]>([]);
   const [isNavigating, setIsNavigating] = useState(false);
   const [showUploadMenu, setShowUploadMenu] = useState(false);
-  // Add image upload states
-  const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  // Universal file upload state
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  // NEW: Asset upload states
-  const [selectedAssets, setSelectedAssets] = useState<File[]>([]);
-  const assetInputRef = useRef<HTMLInputElement>(null);
-  const [uploadMode, setUploadMode] = useState<"images" | "assets" | "docs">(
-    "images"
-  );
+  const unifiedFileInputRef = useRef<HTMLInputElement>(null);
+  // Store raw files for upload when send is clicked
+  const [rawFilesForUpload, setRawFilesForUpload] = useState<File[]>([]);
 
-  // NEW: Add clipboard image state
-  const [clipboardImage, setClipboardImage] = useState<File | null>(null);
-  // NEW: Add clipboard navigation state
-  const [clipboardSelectedOption, setClipboardSelectedOption] = useState<
-    "images" | "assets"
-  >("images");
   // Streaming states
   const [streamingData, setStreamingData] = useState<any>(null);
   const [isStreamingModification, setIsStreamingModification] = useState(false);
@@ -189,22 +182,16 @@ export const useChatPageState = () => {
     setStreamingData,
     isStreamingModification,
     setIsStreamingModification,
-    selectedImages,
-    setSelectedImages,
+    selectedFiles,
+    setSelectedFiles,
     fileInputRef,
-    selectedAssets,
-    setSelectedAssets,
-    assetInputRef,
-    uploadMode,
-    setUploadMode,
-    clipboardImage,
-    setClipboardImage,
+    unifiedFileInputRef,
+    rawFilesForUpload,
+    setRawFilesForUpload,
     showUploadMenu,
     setShowUploadMenu,
     hasUserStopped,
     setHasUserStopped,
-    clipboardSelectedOption,
-    setClipboardSelectedOption,
   };
 };
 
@@ -267,22 +254,16 @@ export const useChatPageLogic = (
     setIsStreamingModification,
     projectScope,
     setProjectScope, // ADD this line
-    selectedImages,
-    setSelectedImages,
+    selectedFiles,
+    setSelectedFiles,
     fileInputRef,
-    selectedAssets,
-    setSelectedAssets,
-    assetInputRef,
-    uploadMode,
-    setUploadMode,
-    setClipboardImage,
-    clipboardImage,
+    unifiedFileInputRef,
+    rawFilesForUpload,
+    setRawFilesForUpload,
     showUploadMenu,
     setShowUploadMenu,
     hasUserStopped,
     setHasUserStopped,
-    clipboardSelectedOption,
-    setClipboardSelectedOption,
     // credits
     setCredits,
   } = state;
@@ -443,20 +424,12 @@ export const useChatPageLogic = (
           formData.append("clerkId", clerkId);
         }
   
-        // Determine which endpoint to use and add appropriate files
-        let apiEndpoint = `${baseUrl}/api/modify/stream`;
-        if (uploadMode === "assets" && assets && assets.length > 0) {
-          // Use asset endpoint for assets only
-          apiEndpoint = `${baseUrl}/api/modify/assets/stream`;
-          assets.forEach((asset) => {
-            formData.append("assets", asset);
-          });
-        } else if ((uploadMode === "images" || uploadMode === "docs") && images && images.length > 0) {
-          // Use regular image endpoint for both images and docs
-          images.forEach((image) => {
-            formData.append("images", image);
-          });
-        }
+        const apiEndpoint = `${baseUrl}/api/modify/stream`;
+        
+        // Use regular image endpoint for all file types
+        images.forEach((image) => {
+          formData.append("images", image);
+        });
   
         const token = await getToken();
         const response = await fetch(apiEndpoint, {
@@ -563,14 +536,8 @@ export const useChatPageLogic = (
                   setIsModifying(false);
   
                   // Update preview URL if new one is provided - THIS IS KEY FOR NEW DEPLOYMENT URL
-                  if (
-                    eventData.data?.newDeploymentUrl ||
-                    eventData.data?.previewUrl
-                  ) {
-                    const newUrl =
-                      eventData.data.newDeploymentUrl ||
-                      eventData.data.previewUrl;
-                    setPreviewUrl(newUrl);
+                  if (eventData.data?.previewUrl) {
+                    setPreviewUrl(eventData.data.previewUrl);
                   }
   
                   // Use the LLM-generated completion message if available, otherwise fallback to detailed message
@@ -701,7 +668,6 @@ export const useChatPageLogic = (
       getCurrentUserId,
       previewUrl,
       clerkId,
-      uploadMode,
       setIsModifying,
       setIsStreamingModification,
       setStreamingData,
@@ -813,45 +779,61 @@ export const useChatPageLogic = (
     }
   }, [projectId, getToken]);
 
-  // NEW: Add these image handling functions
-  const handleImageSelect = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
+  // Universal file handling functions
+  const handleFileSelect = useCallback(
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
       const files = Array.from(event.target.files || []);
-      const validImages = files.filter((file) => {
-        const validTypes = [
-          "image/jpeg",
-          "image/png",
-          "image/gif",
-          "image/webp",
-        ];
-        const maxSize = 5 * 1024 * 1024; // 5MB
+      
+      // Only allow one file at a time
+      if (files.length > 1) {
+        setError("🐾 Arf! Only one file at a time, please!");
+        return;
+      }
 
-        if (!validTypes.includes(file.type)) {
-          setError(
-            `Invalid file type: ${file.name}. Use JPG, PNG, GIF, or WebP.`
-          );
-          return false;
+      if (files.length === 0) return;
+
+      const file = files[0];
+      
+      // Validate file using our validation utility
+      const validation = await validateFile(file);
+      if (validation !== true) {
+        setError(validation as string);
+        // Clear the input to allow re-selection and re-trigger toast
+        if (event.target) {
+          event.target.value = '';
+        }
+        return;
+      }
+
+      // Handle PDF files specially - extract images for preview but store raw PDF
+      if (file.type === "application/pdf") {
+        // Validate PDF file size and page count
+        if (!validatePdfFile(file, 5, 5, (message, type) => {
+          setError(message);
+        })) {
+          // Clear the input to allow re-selection and re-trigger toast
+          if (event.target) {
+            event.target.value = '';
+          }
+          return;
         }
 
-        if (file.size > maxSize) {
-          setError(`File too large: ${file.name}. Maximum size is 5MB.`);
-          return false;
+        // Extract images from PDF for preview (max 3 pages for chat)
+        const result = await extractImagesFromPdf(file, 3, (message, type) => {
+          setError(message);
+        });
+
+        if (result) {
+          // Set the extracted images for preview
+          setSelectedFiles(result.extractedImages);
+          
+          // Store the raw PDF for later upload (don't upload immediately)
+          setRawFilesForUpload([result.originalPdf]);
         }
-
-        return true;
-      });
-
-      // Clear any existing assets and clipboard image when selecting new images
-      setSelectedAssets([]);
-      setClipboardImage(null);
-
-      // Only allow one image at a time
-      const selectedFiles = validImages.slice(0, 1);
-      setSelectedImages(selectedFiles);
-
-      // Upload files to database
-      if (selectedFiles.length > 0) {
-        uploadFilesToDatabaseHelper(selectedFiles);
+      } else {
+        // For non-PDF files, handle normally (don't upload immediately)
+        setSelectedFiles([file]);
+        setRawFilesForUpload([file]);
       }
 
       // Clear the input
@@ -859,148 +841,25 @@ export const useChatPageLogic = (
         event.target.value = "";
       }
     },
-    [setSelectedImages, setSelectedAssets, setClipboardImage, setError, uploadFilesToDatabaseHelper]
+    [setSelectedFiles, setError, uploadFilesToDatabaseHelper]
   );
 
-  const removeImage = useCallback(
+  const removeFile = useCallback(
     (index: number) => {
-      setSelectedImages((prev) => prev.filter((_, i) => i !== index));
-
-      // Clear clipboard image when removing an image to allow new pastes
-      setClipboardImage(null);
-      // Note: We don't clear selectedAssets here as user might want to switch to assets
+      setSelectedFiles((prev: File[]) => prev.filter((_, i) => i !== index));
+      setRawFilesForUpload((prev: File[]) => prev.filter((_, i) => i !== index));
     },
-    [setSelectedImages, setClipboardImage]
+    [setSelectedFiles, setRawFilesForUpload]
   );
 
-  const clearSelectedImages = useCallback(() => {
-    setSelectedImages([]);
-
-    // Clear clipboard image when clearing all images
-    setClipboardImage(null);
-    // Note: We don't clear selectedAssets here as user might want to keep them
-  }, [setSelectedImages, setClipboardImage]);
-
-  // NEW: Asset handling functions
-  const handleAssetSelect = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      const files = Array.from(event.target.files || []);
-      const validAssets = files.filter((file) => {
-        const validTypes = [
-          // Images (Claude-supported)
-          "image/jpeg",
-          "image/png",
-          "image/gif",
-          "image/webp",
-          // Images (basic integration) - EXPANDED ICO SUPPORT
-          "image/svg+xml",
-          "image/ico", // Standard ICO
-          "image/x-icon", // Alternative ICO
-          "image/vnd.microsoft.icon", // Microsoft ICO
-          "image/bmp",
-          "image/tiff",
-          // Other assets
-          "application/pdf",
-          "text/plain",
-          "application/json",
-          "audio/mpeg",
-          "audio/wav",
-          "audio/ogg",
-          "video/mp4",
-          "video/webm",
-          "font/woff",
-          "font/woff2",
-          "font/ttf",
-          "font/otf",
-          "text/css",
-          "application/javascript",
-          "application/zip",
-        ];
-        const maxSize = 10 * 1024 * 1024; // 10MB
-
-        // Check file type
-        if (!validTypes.includes(file.type)) {
-          setError(
-            `Invalid asset type: ${file.name} (${file.type}). Check supported formats.`
-          );
-          return false;
-        }
-
-        if (file.size > maxSize) {
-          setError(`Asset too large: ${file.name}. Maximum size is 10MB.`);
-          return false;
-        }
-
-        return true;
-      });
-
-      // Clear any existing images and clipboard image when selecting new assets
-      setSelectedImages([]);
-      setClipboardImage(null);
-
-      // Only allow one asset at a time
-      const selectedFiles = validAssets.slice(0, 1);
-      setSelectedAssets(selectedFiles);
-
-      // Upload files to database
-      if (selectedFiles.length > 0) {
-        uploadFilesToDatabaseHelper(selectedFiles);
-      }
-
-      if (event.target) {
-        event.target.value = "";
-      }
-    },
-
-    [setSelectedAssets, setSelectedImages, setClipboardImage, setError, uploadFilesToDatabaseHelper]
-  );
-
-  const removeAsset = useCallback(
-    (index: number) => {
-      setSelectedAssets((prev) => prev.filter((_, i) => i !== index));
-
-      // Clear clipboard image when removing an asset to allow new pastes
-      setClipboardImage(null);
-      // Note: We don't clear selectedImages here as user might want to switch to images
-    },
-    [setSelectedAssets, setClipboardImage]
-  );
-
-  const clearSelectedAssets = useCallback(() => {
-    setSelectedAssets([]);
-
-    // Clear clipboard image when clearing all assets
-    setClipboardImage(null);
-    // Note: We don't clear selectedImages here as user might want to keep them
-  }, [setSelectedAssets, setClipboardImage]);
+  const clearSelectedFiles = useCallback(() => {
+    setSelectedFiles([]);
+    setRawFilesForUpload([]);
+  }, [setSelectedFiles, setRawFilesForUpload]);
 
   const toggleUploadMenu = useCallback(() => {
     setShowUploadMenu((prev) => !prev);
-    // Always clear clipboard image when toggling menu
-    setClipboardImage(null);
-  }, [setShowUploadMenu, setClipboardImage]);
-
-  const selectUploadMode = useCallback(
-    (mode: "images" | "assets" | "docs", skipClear: boolean = false) => {
-      setUploadMode(mode);
-      setShowUploadMenu(false);
-      // Only clear current selections when switching modes (unless skipClear is true)
-      if (!skipClear) {
-        // Clear both categories to ensure only one type is selected at a time
-        setSelectedImages([]);
-        setSelectedAssets([]);
-        // Clear clipboard image when switching modes
-        setClipboardImage(null);
-      }
-    },
-    [
-      setUploadMode,
-      setShowUploadMenu,
-      setSelectedImages,
-      setSelectedAssets,
-      setClipboardImage,
-    ]
-  );
+  }, [setShowUploadMenu]);
   // ENHANCED: Improved chunk processing for better file display
   const processChunkQueue = useCallback(async () => {
     if (
@@ -2391,16 +2250,10 @@ export const useChatPageLogic = (
     setError("");
 
     if (canModify && !isWorkflowActive && !isStreamingGeneration) {
-      // Create user message that includes file info based on upload mode
+      // Create user message that includes file info
       let fileInfo = "";
-      if (uploadMode === "images" && selectedImages.length > 0) {
-        fileInfo = `\n\n📎 ${selectedImages.length} image${
-          selectedImages.length > 1 ? "s" : ""
-        } attached`;
-      } else if (uploadMode === "assets" && selectedAssets.length > 0) {
-        fileInfo = `\n\n📁 ${selectedAssets.length} asset${
-          selectedAssets.length > 1 ? "s" : ""
-        } attached`;
+      if (rawFilesForUpload.length > 0) {
+        fileInfo = `\n\n📎 1 file attached`;
       }
 
       const userMessage: Message = {
@@ -2412,22 +2265,22 @@ export const useChatPageLogic = (
       setMessages((prev) => [...prev, userMessage]);
 
       const currentPrompt = prompt;
-      // For docs mode, we want to use the image endpoint, so treat docs files as images
-      const currentImages =
-        uploadMode === "images" || uploadMode === "docs"
-          ? [...selectedImages]
-          : [];
-      const currentAssets = uploadMode === "assets" ? [...selectedAssets] : [];
+      const currentFiles = [...rawFilesForUpload];
+
+      // Upload files to database when send is clicked
+      if (currentFiles.length > 0) {
+        await uploadFilesToDatabaseHelper(currentFiles);
+      }
 
       // Clear prompt and files immediately
       setPrompt("");
-      setSelectedImages([]);
-      setSelectedAssets([]);
+      setSelectedFiles([]);
+      setRawFilesForUpload([]);
 
       await sendModificationRequest(
         currentPrompt,
-        currentImages,
-        currentAssets
+        currentFiles,
+        [] // No separate assets anymore
       );
       return;
     }
@@ -2445,10 +2298,15 @@ export const useChatPageLogic = (
     setMessages((prev) => [...prev, newMessage]);
     const currentPrompt = prompt;
     setPrompt("");
-    // Clear images for workflow path too (though they won't be used)
+    
+    // Upload files to database when send is clicked (for workflow path too)
+    if (rawFilesForUpload.length > 0) {
+      await uploadFilesToDatabaseHelper(rawFilesForUpload);
+    }
+    
     // Clear files for workflow path too (though they won't be used)
-    setSelectedImages([]);
-    setSelectedAssets([]);
+    setSelectedFiles([]);
+    setRawFilesForUpload([]);
 
     try {
       if (projectId) {
@@ -2478,114 +2336,25 @@ export const useChatPageLogic = (
     isWorkflowActive,
     isStreamingGeneration,
     projectId,
-    selectedImages,
-    selectedAssets, // NEW: Add selectedAssets
-    uploadMode, // NEW: Add uploadMode
+    rawFilesForUpload,
     startCompleteWorkflow,
     sendModificationRequest,
+    uploadFilesToDatabaseHelper,
     setIsLoading,
     setHasUserStopped,
     setError,
     setMessages,
     setPrompt,
-    setSelectedImages,
-    setSelectedAssets, // NEW: Add setSelectedAssets
+    setSelectedFiles,
+    setRawFilesForUpload,
   ]);
 
-  // Handle clipboard paste - detect images only and show upload options
+  // Simplified paste handler - just allow default paste
   const handlePaste = useCallback(
     (e: React.ClipboardEvent) => {
-      const items = Array.from(e.clipboardData.items);
-
-      // Only accept image clipboard items
-      const clipboardItem = items.find((item) =>
-        item.type.startsWith("image/")
-      );
-
-      if (clipboardItem) {
-        e.preventDefault(); // Prevent default text paste
-
-        // Convert clipboard item to file
-        const file = clipboardItem.getAsFile();
-        if (file) {
-          // Clear any existing selections and clipboard image when pasting new item
-          setSelectedImages([]);
-          setSelectedAssets([]);
-          setClipboardImage(null);
-
-          // Store the new clipboard file temporarily
-          const clipboardFile = new File(
-            [file],
-            `clipboard-${Date.now()}.png`,
-            { type: clipboardItem.type }
-          );
-
-          // Store the clipboard file in state
-          setClipboardImage(clipboardFile);
-
-          // Show category selection for clipboard file
-          setShowUploadMenu(true);
-        } else {
-        }
-      } else {
-        // Not an image: allow default paste and don't open upload menu
-      }
+      // Allow default paste behavior
     },
-    [setClipboardImage, setShowUploadMenu, setSelectedImages, setSelectedAssets]
-  );
-
-  // Handle keyboard navigation for clipboard options
-  const handleClipboardKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (!showUploadMenu || !clipboardImage) return;
-
-      switch (e.key) {
-        case "ArrowUp":
-        case "ArrowDown":
-          e.preventDefault();
-          setClipboardSelectedOption((prev) =>
-            prev === "images" ? "assets" : "images"
-          );
-          break;
-        case "Enter":
-          e.preventDefault();
-          if (clipboardSelectedOption === "images") {
-            // Add clipboard image to images
-            setSelectedImages([clipboardImage]);
-            selectUploadMode("images", true);
-            // Upload clipboard image to database
-            uploadFilesToDatabaseHelper([clipboardImage]);
-          } else {
-            // Add clipboard image to assets
-            setSelectedAssets([clipboardImage]);
-            selectUploadMode("assets", true);
-            // Upload clipboard image to database
-            uploadFilesToDatabaseHelper([clipboardImage]);
-          }
-          setClipboardImage(null);
-          setShowUploadMenu(false);
-          setClipboardSelectedOption("images");
-          break;
-        case "Escape":
-          e.preventDefault();
-          setClipboardImage(null);
-          setShowUploadMenu(false);
-          setClipboardSelectedOption("images");
-          break;
-      }
-    },
-    [
-      showUploadMenu,
-      clipboardImage,
-      clipboardSelectedOption,
-      setSelectedImages,
-      setSelectedAssets,
-      selectUploadMode,
-      setClipboardImage,
-      setShowUploadMenu,
-      setClipboardSelectedOption,
-      uploadFilesToDatabaseHelper,
-    ]
+    []
   );
 
   const handleKeyPress = useCallback(
@@ -2882,20 +2651,10 @@ export const useChatPageLogic = (
     toggleCodeStreamVisibility,
     shouldShowCodeStreamAsMain,
     sendModificationRequest,
-    handleImageSelect,
-    removeImage,
-    clearSelectedImages,
-    handleAssetSelect,
-    removeAsset,
-    clearSelectedAssets,
+    handleFileSelect,
+    removeFile,
+    clearSelectedFiles,
 
-    // Expose clipboard helpers
-    // Note: clipboardImage is part of state return from useChatPageState
-    // Provide a manual clear in logic hook as utility
-    // @ts-ignore - available in closure
-    clearClipboardImage: () => setClipboardImage(null),
     toggleUploadMenu,
-    selectUploadMode,
-    handleClipboardKeyDown,
   };
 };
