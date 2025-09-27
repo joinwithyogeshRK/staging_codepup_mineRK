@@ -39,7 +39,7 @@ export const useDeployStore = create<DeployState>((set, get) => ({
       );
 
       if (!response.ok) {
-        throw new Error(`Deployment failed (status ${response.status})`);
+        throw new Error(`🐾 Deployment tripped over a stick! Our pup couldn’t fetch your app this time.`);
       }
 
       const deployedUrl = await response.json();

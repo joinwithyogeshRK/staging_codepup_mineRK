@@ -12,16 +12,16 @@ import {
   Rocket,
   CheckCircle,
   Globe,
+  Paperclip,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import PdfPreview from "@/components/pdfpreview";
-import UnifiedFileUploadSection from "../../../components/UnifiedFileUpload";
-import type { UnifiedFileUploadRef } from "../../../components/UnifiedFileUpload";
 import Credit from "../../../components/Credit";
 import { useToast } from "../../../helper/Toast";
 import { Link } from "react-router-dom";
 import ShareSection from "./ShareSection";
+import { validateFile } from "../../../utils/fileValidation";
 
 interface Message {
   id: string;
@@ -50,41 +50,20 @@ interface ChatSectionProps {
   handlePaste: (e: React.ClipboardEvent<HTMLTextAreaElement>) => void;
   handleSubmit: () => void;
 
-  // File upload props
-  uploadMode: "images" | "docs" | "assets";
-  selectedImages: File[];
-  setSelectedImages: React.Dispatch<React.SetStateAction<File[]>>;
-  selectedAssets: File[];
-  setSelectedAssets: React.Dispatch<React.SetStateAction<File[]>>;
-  fileInputRef: React.RefObject<HTMLInputElement | null>; // Fixed: Added | null
-  assetInputRef: React.RefObject<HTMLInputElement | null>; // Fixed: Added | null
-  docsInputRef: React.RefObject<UnifiedFileUploadRef | null>; // Fixed: Added | null
-  handleImageSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  handleAssetSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  removeImage: (index: number) => void;
-  removeAsset: (index: number) => void;
-  clearSelectedImages: () => void;
-  clearSelectedAssets: () => void;
+  // Universal file upload props
+  selectedFiles: File[];
+  setSelectedFiles: React.Dispatch<React.SetStateAction<File[]>>;
+  fileInputRef: React.RefObject<HTMLInputElement | null>;
+  unifiedFileInputRef: React.RefObject<HTMLInputElement | null>;
+  rawFilesForUpload: File[];
+  setRawFilesForUpload: React.Dispatch<React.SetStateAction<File[]>>;
+  handleFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  removeFile: (index: number) => void;
+  clearSelectedFiles: () => void;
   showUploadMenu: boolean;
   toggleUploadMenu: () => void;
-  selectUploadMode: (
-    mode: "images" | "docs" | "assets",
-    skipClear?: boolean
-  ) => void;
   showDocsInput: boolean;
   setShowDocsInput: React.Dispatch<React.SetStateAction<boolean>>;
-
-  // Clipboard props
-  clipboardImage: File | null;
-  clipboardSelectedOption: "images" | "assets"; // Fixed: Changed from string to specific union type
-  hoveredOption: "images" | "assets" | null; // Fixed: Changed from string | null to specific union type
-  setHoveredOption: React.Dispatch<
-    React.SetStateAction<"images" | "assets" | null>
-  >; // Fixed: Updated type
-  setClipboardImage: React.Dispatch<React.SetStateAction<File | null>>;
-  setClipboardSelectedOption: React.Dispatch<
-    React.SetStateAction<"images" | "assets">
-  >; // Fixed: Updated type
   uploadFilesToDatabaseHelper: (files: File[]) => Promise<void>;
 
   // Status props
@@ -139,31 +118,19 @@ const ChatSection: React.FC<ChatSectionProps> = ({
   handleKeyPress,
   handlePaste,
   handleSubmit,
-  uploadMode,
-  selectedImages,
-  setSelectedImages,
-  selectedAssets,
-  setSelectedAssets,
+  selectedFiles,
+  setSelectedFiles,
   fileInputRef,
-  assetInputRef,
-  docsInputRef,
-  handleImageSelect,
-  handleAssetSelect,
-  removeImage,
-  removeAsset,
-  clearSelectedImages,
-  clearSelectedAssets,
+  unifiedFileInputRef,
+  rawFilesForUpload,
+  setRawFilesForUpload,
+  handleFileSelect,
+  removeFile,
+  clearSelectedFiles,
   showUploadMenu,
   toggleUploadMenu,
-  selectUploadMode,
   showDocsInput,
   setShowDocsInput,
-  clipboardImage,
-  clipboardSelectedOption,
-  hoveredOption,
-  setHoveredOption,
-  setClipboardImage,
-  setClipboardSelectedOption,
   uploadFilesToDatabaseHelper,
   isLoading,
   projectStatus,
@@ -195,6 +162,7 @@ const ChatSection: React.FC<ChatSectionProps> = ({
 }) => {
   const { showToast: globalShowToast } = useToast();
   const notify = showToast || globalShowToast;
+
   return (
     <div
       className={`sidebar transition-all duration-300 ease-out flex flex-col ${
@@ -526,153 +494,74 @@ const ChatSection: React.FC<ChatSectionProps> = ({
 
       {/* Input Area */}
       <div className="chat-input-area">
-        {((uploadMode === "images" && selectedImages.length > 0) ||
-          (uploadMode === "docs" && selectedImages.length > 0) ||
-          (uploadMode === "assets" && selectedAssets.length > 0)) && (
+        {rawFilesForUpload.length > 0 && (
           <div className="mb-3 p-2 bg-subtle rounded-lg border border-default">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-body">
-                {uploadMode === "images"
-                  ? `${selectedImages.length} image${
-                      selectedImages.length > 1 ? "s" : ""
-                    } selected`
-                  : uploadMode === "docs"
-                  ? `${selectedImages.length} document${
-                      selectedImages.length > 1 ? "s" : ""
-                    } selected`
-                  : `${selectedAssets.length} asset${
-                      selectedAssets.length > 1 ? "s" : ""
-                    } selected`}
+                1 file selected
               </span>
               <button
-                onClick={() =>
-                  uploadMode === "assets"
-                    ? clearSelectedAssets()
-                    : clearSelectedImages()
-                }
+                onClick={clearSelectedFiles}
                 className="text-xs text-danger hover:text-danger-weak"
               >
                 Clear all
               </button>
             </div>
             <div className="flex gap-2 overflow-visible">
-              {uploadMode === "images" || uploadMode === "docs"
-                ? // Image and Docs previews (both use selectedImages)
-                  selectedImages.map((image, index) => (
-                    <div
-                      key={index}
-                      className="relative flex-shrink-0 overflow-visible"
-                    >
-                      {uploadMode === "docs" ? (
-                        // Use PdfPreview component for docs mode
-                        <PdfPreview
-                          file={image}
-                          onRemove={() => removeImage(index)}
-                          size="medium"
-                        />
-                      ) : (
-                        // Show image preview for images mode
-                        <img
-                          src={URL.createObjectURL(image)}
-                          alt={`Preview ${index + 1}`}
-                          className="w-12 h-12 object-cover rounded border border-strong"
-                        />
-                      )}
-                      {uploadMode !== "docs" && (
-                        <button
-                          onClick={() => removeImage(index)}
-                          className="absolute -top-1 -right-1 btn-circle-danger z-10"
-                        >
-                          ×
-                        </button>
-                      )}
+              {rawFilesForUpload.map((file, index) => (
+                <div
+                  key={index}
+                  className="relative flex-shrink-0 overflow-visible"
+                >
+                  {file.type === "application/pdf" ? (
+                    // Show PDF file icon with grey background and PDF text
+                    <div className="w-12 h-12 bg-gray-200 rounded border border-gray-300 flex items-center justify-center">
+                      <span className="text-xs text-gray-600 font-mono font-bold">PDF</span>
                     </div>
-                  ))
-                : // Asset previews
-                  selectedAssets.map((asset, index) => (
-                    <div
-                      key={index}
-                      className="relative flex-shrink-0 overflow-visible"
-                    >
-                      <div className="w-12 h-12 bg-tile rounded border border-strong flex items-center justify-center">
-                        {asset.type.startsWith("image/") ? (
-                          <img
-                            src={URL.createObjectURL(asset)}
-                            alt={asset.name}
-                            className="w-full h-full object-cover rounded"
-                          />
-                        ) : (
-                          <span className="text-xs text-body font-mono">
-                            {asset.name.split(".").pop()?.toUpperCase() ||
-                              "FILE"}
-                          </span>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => removeAsset(index)}
-                        className="absolute -top-1 -right-1 btn-circle-danger z-10"
-                      >
-                        ×
-                      </button>
+                  ) : file.type.startsWith("image/") ? (
+                    // Show image preview for image files
+                    <img
+                      src={URL.createObjectURL(file)}
+                      alt={file.name}
+                      className="w-12 h-12 object-cover rounded border border-strong"
+                    />
+                  ) : (
+                    // Show file type icon for other files
+                    <div className="w-12 h-12 bg-tile rounded border border-strong flex items-center justify-center">
+                      <span className="text-xs text-white font-mono">
+                        {file.name.split(".").pop()?.toUpperCase() || "FILE"}
+                      </span>
                     </div>
-                  ))}
+                  )}
+                  <button
+                    onClick={() => removeFile(index)}
+                    className="absolute -top-1 -right-1 btn-circle-danger z-10"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
         )}
 
-        {(uploadMode === "docs" || showDocsInput) && (
-          <div className={`${showDocsInput ? "block" : "hidden"} mb-3`}>
-            <UnifiedFileUploadSection
-              ref={docsInputRef}
-              selectedFiles={selectedImages}
-              setSelectedFiles={(files) => {
-                setSelectedImages(files);
-                // Automatically hide the input after file selection
-                if (files.length > 0) {
-                  setTimeout(() => setShowDocsInput(false), 200);
-                  notify("Files selected successfully", "success");
-                }
-              }}
-              isConfigValid={true}
-              uploadMode="docs"
-              projectId={projectId}
-              getToken={getToken}
-              showToast={notify}
-            />
-          </div>
-        )}
+        {/* Universal File Upload Input */}
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileSelect}
+          accept=".jpg,.jpeg,.png,.gif,.webp,.svg,.ico,.pdf"
+          className="hidden"
+        />
 
-        {/* File Upload Inputs - Only for images and assets (docs handled by UnifiedFileUploadSection) */}
-        {uploadMode !== "docs" && (
-          <>
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={(e) => {
-                const files = Array.from(e.target.files || []);
-                if (files.length > 1) {
-                  notify("Only select one image", "error");
-                }
-                handleImageSelect(e);
-              }}
-              accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml,image/ico,image/x-icon,image/vnd.microsoft.icon,image/bmp,image/tiff"
-              className="hidden"
-            />
-            <input
-              type="file"
-              ref={assetInputRef}
-              onChange={(e) => {
-                const files = Array.from(e.target.files || []);
-                if (files.length > 1) {
-                  notify("Only select one file", "error");
-                }
-                handleAssetSelect(e);
-              }}
-              accept="image/*,application/pdf,text/plain,application/json,audio/*,video/*,font/*,text/css,application/javascript,application/zip"
-              className="hidden"
-            />
-          </>
-        )}
+        {/* Unified File Input for Paperclip Button */}
+        <input
+          type="file"
+          ref={unifiedFileInputRef}
+          onChange={handleFileSelect}
+          accept=".jpg,.jpeg,.png,.gif,.webp,.svg,.ico,.pdf"
+          className="hidden"
+        />
 
         {/* Refactored Chat Input Bar - Lovable Style */}
         <div className="chat-input-container">
@@ -733,7 +622,7 @@ const ChatSection: React.FC<ChatSectionProps> = ({
             <div className="chat-buttons" data-upload-menu>
               <div className="relative">
                 <button
-                  onClick={toggleUploadMenu}
+                  onClick={() => unifiedFileInputRef.current?.click()}
                   disabled={
                     isLoading ||
                     projectStatus === "loading" ||
@@ -751,148 +640,9 @@ const ChatSection: React.FC<ChatSectionProps> = ({
                   className="chat-button"
                   title="Add files"
                 >
-                  <Plus className="w-4 h-4" />
+                  <Paperclip className="w-4 h-4 -rotate-45" />
                 </button>
 
-                {/* Dropdown Menu */}
-                {showUploadMenu && (
-                  <div className="absolute bottom-full left-0 mb-2 dropdown py-1 min-w-[140px] animate-in fade-in-0 zoom-in-95 duration-200 origin-bottom-left">
-                    {/* Clipboard Image Header */}
-                    {clipboardImage && (
-                      <div className="px-3 py-2 border-b animate-in fade-in-0 slide-in-from-top-2 duration-200">
-                        <div className="text-xs text-muted mb-2">
-                          📋 Clipboard Image Detected
-                        </div>
-                        <div className="flex items-center gap-2 mb-2">
-                          {clipboardImage.type === "application/pdf" ||
-                          clipboardImage.name.toLowerCase().endsWith(".pdf") ? (
-                            // Show PDF icon for PDF files
-                            <div className="w-8 h-8 bg-red-100 rounded border border-strong flex items-center justify-center">
-                              <FileText className="w-4 h-4 text-red-600" />
-                            </div>
-                          ) : (
-                            // Show image preview for images
-                            <img
-                              src={URL.createObjectURL(clipboardImage)}
-                              alt="Clipboard"
-                              className="w-8 h-8 object-cover rounded border border-strong"
-                            />
-                          )}
-                          <span className="text-xs text-body truncate">
-                            {clipboardImage.name}
-                          </span>
-                        </div>
-                        <div className="text-xs text-muted">
-                          Select category to add:
-                        </div>
-                      </div>
-                    )}
-
-                    <button
-                      onClick={() => {
-                        if (clipboardImage) {
-                          // Add clipboard image to images (replace existing selection)
-                          setSelectedImages([clipboardImage]); // Only one image allowed
-                          // Upload clipboard image to database
-                          uploadFilesToDatabaseHelper([clipboardImage]);
-                          // Switch to images mode to show the preview
-                          selectUploadMode("images", true); // Skip clearing to keep the image
-                          setClipboardImage(null); // Clear clipboard image
-                          setClipboardSelectedOption("images");
-                        } else {
-                          // Regular file upload
-                          selectUploadMode("images");
-                          fileInputRef.current?.click();
-                        }
-                      }}
-                      onMouseEnter={() => {
-                        if (clipboardImage) {
-                          setHoveredOption("images");
-                          setClipboardSelectedOption("images");
-                        }
-                      }}
-                      onMouseLeave={() => {
-                        setHoveredOption(null);
-                      }}
-                      className={`menu-item transition-all duration-150 ${
-                        clipboardImage &&
-                        (clipboardSelectedOption === "images" ||
-                          hoveredOption === "images")
-                          ? "bg-primary-subtle border-primary text-primary"
-                          : hoveredOption === "images"
-                          ? "bg-slate-50 text-slate-900"
-                          : "hover:bg-slate-50 hover:text-slate-900"
-                      }`}
-                    >
-                      🖼️ <span>Images</span>
-                      {clipboardImage && (
-                        <span className="text-xs text-primary-weak">
-                          (Add clipboard)
-                        </span>
-                      )}
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        if (clipboardImage) {
-                          // Add clipboard image to assets (replace existing selection)
-                          setSelectedAssets([clipboardImage]); // Only one asset allowed
-                          // Upload clipboard image to database
-                          uploadFilesToDatabaseHelper([clipboardImage]);
-                          // Switch to assets mode to show the preview
-                          selectUploadMode("assets", true); // Skip clearing to keep the asset
-                          setClipboardImage(null); // Clear clipboard image
-                          setClipboardSelectedOption("assets");
-                        } else {
-                          // Regular file upload
-                          selectUploadMode("assets");
-                          assetInputRef.current?.click();
-                        }
-                      }}
-                      onMouseEnter={() => {
-                        if (clipboardImage) {
-                          setHoveredOption("assets");
-                          setClipboardSelectedOption("assets");
-                        }
-                      }}
-                      onMouseLeave={() => {
-                        setHoveredOption(null);
-                      }}
-                      className={`menu-item transition-all duration-150 ${
-                        clipboardImage &&
-                        (clipboardSelectedOption === "assets" ||
-                          hoveredOption === "assets")
-                          ? "bg-primary-subtle border-primary text-primary"
-                          : hoveredOption === "assets"
-                          ? "bg-slate-50 text-slate-900"
-                          : "hover:bg-slate-50 hover:text-slate-900"
-                      }`}
-                    >
-                      📁 <span>Assets</span>
-                      {clipboardImage && (
-                        <span className="text-xs text-primary-weak">
-                          (Add clipboard)
-                        </span>
-                      )}
-                    </button>
-                    {!clipboardImage && (
-                      <button
-                        onClick={() => {
-                          selectUploadMode("docs");
-                          // Show the docs input section
-                          setShowDocsInput(true);
-                          // Auto-trigger the file selection after a brief delay
-                          setTimeout(() => {
-                            docsInputRef.current?.click();
-                          }, 100);
-                        }}
-                        className={`menu-item transition-all duration-150 hover:bg-slate-50 hover:text-slate-900`}
-                      >
-                        📄 <span>Docs</span>
-                      </button>
-                    )}
-                  </div>
-                )}
               </div>
             </div>
 

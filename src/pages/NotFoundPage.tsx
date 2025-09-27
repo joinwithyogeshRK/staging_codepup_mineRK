@@ -76,7 +76,7 @@ export default function NotFoundPage() {
               className="w-40 h-40 rounded-xl bg-white/90 shadow-lg flex items-center justify-center flex-col"
             >
               {/* <div className="text-4xl">🤖</div> */}
-              <img src="main.png" className="h-24" />
+              <img src="/main.png" className="h-24" />
               <div className="text-sm text-slate-600">Lost puppy</div>
             </motion.div>
 

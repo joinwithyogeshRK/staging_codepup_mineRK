@@ -1,21 +1,14 @@
 import React, { useCallback, useState } from "react";
 import { Upload, ImageIcon, FileText, Lightbulb } from "lucide-react";
-import * as pdfjsLib from "pdfjs-dist";
 import PdfPreview from "./pdfpreview";
-
-// Use the most reliable CDN approach
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+import { extractImagesFromPdf, validatePdfFile, type ExtractedImageFile } from "../utils/pdfExtraction";
+import { useToast } from "../helper/Toast";
 
 interface ImageUploadSectionProps {
   selectedImages: File[];
   setSelectedImages: React.Dispatch<React.SetStateAction<File[]>>;
   selectedProjectType: "frontend" | "fullstack" | null;
   isConfigValid: boolean;
-  showToast: (
-    message: string,
-    type: "success" | "error",
-    duration?: number
-  ) => void;
   // Optional: parent can collect original PDFs separately for upload
   setSelectedPdfs?: React.Dispatch<React.SetStateAction<File[]>>;
 }
@@ -25,104 +18,12 @@ const ImageUploadSection = ({
   setSelectedImages,
   selectedProjectType,
   isConfigValid,
-  showToast,
   setSelectedPdfs,
 }: ImageUploadSectionProps) => {
   const [isProcessingPdf, setIsProcessingPdf] = useState(false);
   const [pdfGroups, setPdfGroups] = useState<{ [key: string]: File[] }>({});
+  const { showToast } = useToast();
 
-  // Function to extract images from PDF
-  const extractImagesFromPdf = async (pdfFile: File) => {
-    try {
-      setIsProcessingPdf(true);
-
-      const arrayBuffer = await pdfFile.arrayBuffer();
-
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-
-      // Check page limit
-      if (pdf.numPages > 5) {
-        showToast(
-          `Arf! 🐶 "${pdfFile.name}" has ${pdf.numPages} pages. Our pup can only handle 5 at a time.`,
-          "error"
-        );
-        return [];
-      }
-
-      const extractedImages = [];
-
-      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-        const page = await pdf.getPage(pageNum);
-        const viewport = page.getViewport({ scale: 1.5 });
-
-        // Create canvas to render PDF page
-        const canvas = document.createElement("canvas");
-        const context = canvas.getContext("2d")!;
-        canvas.height = viewport.height;
-        canvas.width = viewport.width;
-
-        // Render page to canvas
-        await page.render({
-          canvasContext: context!,
-          viewport: viewport,
-          canvas: canvas,
-        }).promise;
-
-        // Convert canvas to blob with better error handling
-        const blob = await new Promise<Blob>((resolve, reject) => {
-          canvas.toBlob(
-            (result) => {
-              if (result) {
-                resolve(result);
-              } else {
-                reject(new Error("Failed to convert canvas to blob"));
-              }
-            },
-            "image/png",
-            0.9
-          );
-        });
-
-        // Create a File object from the blob with PDF metadata
-        const imageFile = new File(
-          [blob],
-          `${pdfFile.name}-page-${pageNum}.png`,
-          {
-            type: "image/png",
-            lastModified: Date.now(),
-          }
-        );
-
-        // Add custom property to identify this as a PDF-derived image
-        (imageFile as any).originalPdfName = pdfFile.name;
-        (imageFile as any).pageNumber = pageNum;
-        (imageFile as any).totalPages = pdf.numPages;
-
-        extractedImages.push(imageFile);
-      }
-
-      return extractedImages;
-    } catch (error: unknown) {
-      
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-
-      // More specific error messages
-      if (errorMessage.includes("Invalid PDF")) {
-        showToast(`Arf! 🐶 "${pdfFile.name}" doesn’t look like a valid PDF. Try another file?`, "error");
-      } else if (errorMessage.includes("workerSrc")) {
-        showToast(
-          "Arf! 🐶 Our pup couldn’t chew through this PDF. Please refresh and try again!",
-          "error"
-        );
-      } else {
-        showToast(`Arf! 🐾 Our pup had trouble sniffing through your PDF: ${errorMessage}.`, "error");
-      }
-      return [];
-    } finally {
-      setIsProcessingPdf(false);
-    }
-  };
 
   const handleFileSelect = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -160,27 +61,28 @@ const ImageUploadSection = ({
 
       // Process PDF files if any - CONVERT TO IMAGES (for UI preview only)
       if (pdfFiles.length > 0) {
-        for (const pdfFile of pdfFiles) {
-          // Check file size (3.75MB limit)
-          if (pdfFile.size > 3.75 * 1024 * 1024) {
-            showToast(
-              `Ruff! 🐶 "${pdfFile.name}" is too big for our pup to carry. Max size is 3.75MB.`,
-              "error"
-            );
-            continue;
-          }
+        setIsProcessingPdf(true);
+        try {
+          for (const pdfFile of pdfFiles) {
+            // Validate PDF file
+            if (!validatePdfFile(pdfFile, 3.75, 5, showToast)) {
+              continue;
+            }
 
-          // Extract images from PDF
-          const extractedImages = await extractImagesFromPdf(pdfFile);
-          if (extractedImages.length > 0) {
-            // Group the images by PDF name for preview purposes
-            setPdfGroups((prev) => ({
-              ...prev,
-              [pdfFile.name]: extractedImages,
-            }));
+            // Extract images from PDF using utility function
+            const result = await extractImagesFromPdf(pdfFile, 5, showToast);
+            if (result && result.extractedImages.length > 0) {
+              // Group the images by PDF name for preview purposes
+              setPdfGroups((prev) => ({
+                ...prev,
+                [pdfFile.name]: result.extractedImages,
+              }));
 
-            allImageFiles.push(...extractedImages);
+              allImageFiles.push(...result.extractedImages);
+            }
           }
+        } finally {
+          setIsProcessingPdf(false);
         }
       }
 
@@ -287,6 +189,10 @@ const ImageUploadSection = ({
       delete updated[pdfName];
       return updated;
     });
+    // Also remove the corresponding PDF from selectedPdfs
+    if (typeof setSelectedPdfs === 'function') {
+      setSelectedPdfs((prev) => prev.filter((pdf) => pdf.name !== pdfName));
+    }
   };
 
   const removeStandaloneImage = (index: number) => {

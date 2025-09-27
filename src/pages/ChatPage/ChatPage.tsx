@@ -6,8 +6,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "../../components/ui/dialog";
-import PdfPreview from "../../components/pdfpreview";
-import UnifiedFileUploadSection from "../../components/UnifiedFileUpload";
 import type { UnifiedFileUploadRef } from "../../components/UnifiedFileUpload";
 import React, {
   useContext,
@@ -17,61 +15,36 @@ import React, {
   useRef,
 } from "react";
 import { MyContext } from "../../context/FrontendStructureContext";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import {
-  Send,
-  Code,
-  Loader2,
-  RefreshCw,
-  AlertCircle,
-  ExternalLink,
-  FileText,
-  Database,
-  Palette,
-  Monitor,
-  Rocket, // Added for deploy button
-  CheckCircle, // Added for success states
-  Plus,
-  Image,
-  File,
-  Globe,
-} from "lucide-react";
+
 import { StreamingCodeDisplay, FileCompletionTracker } from "../streaming";
 import axios from "axios";
 import { useAuth, UserButton } from "@clerk/clerk-react";
 import { useChatPageState, useChatPageLogic } from "../../hooks/chatpage_hooks";
 import { v4 as uuidv4 } from "uuid";
-import CopyLinkButton from "../../components/CopyToClip";
 import { uploadFilesToDatabase } from "../../utils/fileUpload";
 import type { ContextValue } from "../../types/index";
-import { WorkflowStateManager } from "../../utils/workflowStateManager";
 import GitHubModel from "../../components/GithubModel";
 import Credit from "../../components/Credit";
 import RewardModal from "../../components/RewardModal";
-import BlankApp from "../../components/BlankApp";
 // Close upload menu when clicking outside
 
 import { amplitude } from "../../utils/amplitude";
 import { useToast } from "../../helper/Toast";
 import ChatSection from "./component/ChatSection";
 import PreviewContent from "./component/PreviewSection";
-import { useDeployStore } from "@/store/deployAndPublish/store";
+import { useDeployStore } from "@/store/deployAndPublish/deployAndPublishstore";
 import ShareSection from "./component/ShareSection";
 
 const ChatPage: React.FC = () => {
   const context = useContext(MyContext);
-  const { value } = context as ContextValue;
 
   // Use custom hooks for state and logic
   const state = useChatPageState();
-  const { hasUserStopped } = state;
   const logic = useChatPageLogic(state);
 
   // Iframe loading state with cache busting
   const [isIframeLoading, setIsIframeLoading] = useState(false);
   const [iframeKey, setIframeKey] = useState(0);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const [shareAbleUrl, setShareAbleUrl] = useState("");
   const hasInitializedShareUrlRef = useRef(false);
@@ -246,23 +219,17 @@ const ChatPage: React.FC = () => {
     isStreamingModification,
     isModifying,
     projectScope,
-    selectedImages,
-    setSelectedImages,
+    selectedFiles,
+    setSelectedFiles,
     fileInputRef,
-    // NEW: Add asset state
-    selectedAssets,
-    setSelectedAssets,
-    assetInputRef,
-    uploadMode,
-    clipboardImage,
-    setClipboardImage,
+    unifiedFileInputRef,
+    rawFilesForUpload,
+    setRawFilesForUpload,
     setPreviewUrl,
     setMessages,
     setError,
     showUploadMenu,
     setShowUploadMenu,
-    clipboardSelectedOption,
-    setClipboardSelectedOption,
     showDocsInput,
     setShowDocsInput,
   } = state;
@@ -374,16 +341,10 @@ const ChatPage: React.FC = () => {
     existingProject,
     scope,
     getWorkflowSteps,
-    handleImageSelect,
-    removeImage,
-    clearSelectedImages,
-    // NEW: Add asset functions
-    handleAssetSelect,
-    removeAsset,
-    clearSelectedAssets,
+    handleFileSelect,
+    removeFile,
+    clearSelectedFiles,
     toggleUploadMenu,
-    selectUploadMode,
-    handleClipboardKeyDown,
   } = logic;
 
   // Helper function to upload files to database
@@ -414,13 +375,6 @@ const ChatPage: React.FC = () => {
           setShowUploadMenu(false);
           setShowPublishMenu(false);
           setShowChatPublishMenu(false);
-          // Clear clipboard image when menu is closed
-          if (clipboardImage) {
-            setClipboardImage(null);
-          }
-          // Reset selection when menu closes
-          setClipboardSelectedOption("images");
-          setHoveredOption(null);
         }
       }
     };
@@ -434,10 +388,6 @@ const ChatPage: React.FC = () => {
     showPublishMenu,
     showChatPublishMenu,
     setShowUploadMenu,
-    clipboardImage,
-    setClipboardImage,
-    setClipboardSelectedOption,
-    setHoveredOption,
   ]);
 
   // Watch streaming events for insufficient credits (modification path)
@@ -534,33 +484,6 @@ const ChatPage: React.FC = () => {
     }
   }, [messages]);
 
-  // Add keyboard listener when clipboard menu is open
-  useEffect(() => {
-    if (showUploadMenu && clipboardImage) {
-      const handleGlobalKeyDown = (e: KeyboardEvent) => {
-        if (["ArrowUp", "ArrowDown", "Enter", "Escape"].includes(e.key)) {
-          // Reset hover state when using keyboard navigation
-          if (["ArrowUp", "ArrowDown"].includes(e.key)) {
-            setHoveredOption(null);
-          }
-          handleClipboardKeyDown(e as any);
-
-          // Reset hover state when menu closes (Enter or Escape)
-          if (["Enter", "Escape"].includes(e.key)) {
-            setHoveredOption(null);
-          }
-        }
-      };
-
-      document.addEventListener("keydown", handleGlobalKeyDown);
-      return () => document.removeEventListener("keydown", handleGlobalKeyDown);
-    }
-  }, [
-    showUploadMenu,
-    clipboardImage,
-    handleClipboardKeyDown,
-    setHoveredOption,
-  ]);
 
   // Reset hover state when menu opens/closes
   useEffect(() => {
@@ -675,13 +598,6 @@ const ChatPage: React.FC = () => {
   ]);
 
   // Countdown timer effect
-  // Add this useEffect in your ChatPage component
-  useEffect(() => {
-    if (uploadMode === "docs" && selectedImages.length > 0 && showDocsInput) {
-      // Hide docs input after successful file selection
-      setTimeout(() => setShowDocsInput(false), 500);
-    }
-  }, [selectedImages.length, uploadMode, showDocsInput, setShowDocsInput]);
   useEffect(() => {
     let interval: NodeJS.Timeout;
 
@@ -772,31 +688,19 @@ const ChatPage: React.FC = () => {
           handleKeyPress={handleKeyPress}
           handlePaste={handlePaste}
           handleSubmit={handleSubmit}
-          uploadMode={uploadMode}
-          selectedImages={selectedImages}
-          setSelectedImages={setSelectedImages}
-          selectedAssets={selectedAssets}
-          setSelectedAssets={setSelectedAssets}
+          selectedFiles={selectedFiles}
+          setSelectedFiles={setSelectedFiles}
           fileInputRef={fileInputRef}
-          assetInputRef={assetInputRef}
-          docsInputRef={docsInputRef}
-          handleImageSelect={handleImageSelect}
-          handleAssetSelect={handleAssetSelect}
-          removeImage={removeImage}
-          removeAsset={removeAsset}
-          clearSelectedImages={clearSelectedImages}
-          clearSelectedAssets={clearSelectedAssets}
+          unifiedFileInputRef={unifiedFileInputRef}
+          rawFilesForUpload={rawFilesForUpload}
+          setRawFilesForUpload={setRawFilesForUpload}
+          handleFileSelect={handleFileSelect}
+          removeFile={removeFile}
+          clearSelectedFiles={clearSelectedFiles}
           showUploadMenu={showUploadMenu}
           toggleUploadMenu={toggleUploadMenu}
-          selectUploadMode={selectUploadMode}
           showDocsInput={showDocsInput}
           setShowDocsInput={setShowDocsInput}
-          clipboardImage={clipboardImage}
-          clipboardSelectedOption={clipboardSelectedOption}
-          hoveredOption={hoveredOption}
-          setHoveredOption={setHoveredOption}
-          setClipboardImage={setClipboardImage}
-          setClipboardSelectedOption={setClipboardSelectedOption}
           uploadFilesToDatabaseHelper={uploadFilesToDatabaseHelper}
           isLoading={isLoading}
           projectStatus={projectStatus}

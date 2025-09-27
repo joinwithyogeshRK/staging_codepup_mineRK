@@ -279,21 +279,7 @@ const Index = () => {
     currentStep,
     readyToGenerate,
     showDesignPreview,
-  ]);
-
-  const resetWorkflow = useCallback(() => {
-    setWorkflowActive(false);
-    setWorkflowMessages([]);
-    setCurrentStep("analyze");
-    setDesignChoices(null);
-    setReadyToGenerate(false);
-    setCurrentProjectId(null);
-    setSelectedImages([]);
-    setPrompt("");
-  }, []);
- 
-
-  // Update project name in backend
+  ]); 
 
   // Start analyze workflow after project creation
   const { clickSubmit, startAnalyzeWorkflow } = useProjectWorkflow({
@@ -433,11 +419,17 @@ const Index = () => {
       setDesignChoices(null);
       setReadyToGenerate(false);
       await startAnalyzeWorkflow(currentProjectId, prompt);
+      // Clear files after starting workflow to prevent re-upload
+      setSelectedImages([]);
+      setSelectedPdfs([]);
       return;
     }
 
     if (workflowActive && currentProjectId && prompt.trim()) {
       await startAnalyzeWorkflow(currentProjectId, prompt);
+      // Clear files after continuing workflow to prevent re-upload
+      setSelectedImages([]);
+      setSelectedPdfs([]);
     }
   }, [
     dbUser,
@@ -485,35 +477,6 @@ const Index = () => {
       }
     },
     [dbUser, supabaseConfig, isConfigValid, getToken]
-  );
-
-  // Handle feedback submission
-  const onFeedbackSubmit = useCallback(
-    (feedback: string) => {
-      handleFeedbackSubmit(
-        feedback,
-        currentProjectId,
-        dbUser,
-        projects,
-        getToken,
-        setWorkflowMessages,
-        setCurrentStep,
-        setDesignChoices,
-        setReadyToGenerate,
-        setIsProcessingFeedback
-      );
-    },
-    [
-      currentProjectId,
-      dbUser,
-      projects,
-      getToken,
-      setWorkflowMessages,
-      setCurrentStep,
-      setDesignChoices,
-      setReadyToGenerate,
-      setIsProcessingFeedback,
-    ]
   );
 
   // Generate final application
@@ -976,7 +939,6 @@ const Index = () => {
                           setSelectedImages={setSelectedImages}
                           selectedProjectType={selectedProjectType}
                           isConfigValid={isConfigValid}
-                          showToast={showToast}
                           setSelectedPdfs={setSelectedPdfs}
                         />
 
