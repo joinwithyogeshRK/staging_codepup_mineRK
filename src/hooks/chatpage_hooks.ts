@@ -2272,6 +2272,9 @@ export const useChatPageLogic = (
         await uploadFilesToDatabaseHelper(currentFiles);
       }
 
+      // For modification request, use selectedFiles (extracted images) instead of rawFilesForUpload (raw PDFs)
+      const filesForModification = [...selectedFiles];
+
       // Clear prompt and files immediately
       setPrompt("");
       setSelectedFiles([]);
@@ -2279,7 +2282,7 @@ export const useChatPageLogic = (
 
       await sendModificationRequest(
         currentPrompt,
-        currentFiles,
+        filesForModification,
         [] // No separate assets anymore
       );
       return;
