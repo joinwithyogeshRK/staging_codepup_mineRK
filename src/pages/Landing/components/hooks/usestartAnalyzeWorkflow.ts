@@ -72,8 +72,42 @@ export function useProjectWorkflow({
         };
         setWorkflowMessages([userMessage]);
 
+        const token = await getToken();
+
+        const pdfsToUpload = selectedPdfs;
+        const trueImagesToUpload = selectedImages.filter(
+          (f: any) => !f.originalPdfName
+        );
+
+        const filesToUpload = [...pdfsToUpload, ...trueImagesToUpload];
+
+        let uploadedPdfFiles: Array<{ name: string; type: string; url: string }> = [];
+
+        if (filesToUpload.length > 0 && token) {
+          try {
+            const uploadResult = await uploadFilesToDatabase(filesToUpload, projectId, token);
+            if (uploadResult.success && uploadResult.data) {
+              // Filter for PDF files only
+              uploadedPdfFiles = uploadResult.data.files.filter(file => file.type === 'pdf');
+            }
+          } catch (uploadError) {
+            // Continue even if upload fails
+          }
+        }
+
+        // Build enhanced prompt with PDF file information
+        let enhancedPrompt = userPrompt;
+        
+        if (uploadedPdfFiles.length > 0) {
+          const pdfInfo = uploadedPdfFiles.map(pdf => `${pdf.name} - ${pdf.url}`).join('\n');
+          enhancedPrompt += `\n\n${pdfInfo}`;
+          
+          
+        }
+        enhancedPrompt += '\n\nIf this website is being generated as a portfolio, please also include a prominent "Download Resume" button that links to the uploaded resume.';
+
         const formData = new FormData();
-        formData.append("prompt", userPrompt);
+        formData.append("prompt", enhancedPrompt);
         formData.append("userId", dbUser!.id.toString());
         formData.append("projectId", projectId.toString());
         formData.append(
@@ -91,23 +125,6 @@ export function useProjectWorkflow({
         selectedImages.forEach((image) => {
           formData.append("images", image);
         });
-
-        const token = await getToken();
-
-        const pdfsToUpload = selectedPdfs;
-        const trueImagesToUpload = selectedImages.filter(
-          (f: any) => !f.originalPdfName
-        );
-
-        const filesToUpload = [...pdfsToUpload, ...trueImagesToUpload];
-
-        if (filesToUpload.length > 0 && token) {
-          try {
-            await uploadFilesToDatabase(filesToUpload, projectId, token);
-          } catch (uploadError) {
-            // Continue even if upload fails
-          }
-        }
 
         const analyzeResponse = await axios.post(
           `${BASE_URL}/api/design/analyze`,
