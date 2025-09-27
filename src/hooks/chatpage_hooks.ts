@@ -2354,10 +2354,75 @@ export const useChatPageLogic = (
 
   // Simplified paste handler - just allow default paste
   const handlePaste = useCallback(
-    (e: React.ClipboardEvent) => {
-      // Allow default paste behavior
+    async (e: React.ClipboardEvent) => {
+      const clipboardData = e.clipboardData;
+      const items = Array.from(clipboardData.items);
+      
+      // Check if any items are files
+      const fileItems = items.filter(item => item.kind === 'file');
+      
+      if (fileItems.length > 0) {
+        e.preventDefault(); // Prevent default text paste
+        
+        // Only allow one file at a time
+        if (fileItems.length > 1) {
+          setError("🐾 Arf! Only one file at a time, please!");
+          return;
+        }
+        
+        const fileItem = fileItems[0];
+        const file = fileItem.getAsFile();
+        
+        if (!file) {
+          setError("🐾 Arf! Could not read the pasted file!");
+          return;
+        }
+        
+        // Validate file using our validation utility
+        const validation = await validateFile(file);
+        if (validation !== true) {
+          setError(validation as string);
+          return;
+        }
+        
+        // Handle PDF files specially - extract images for preview but store raw PDF
+        if (file.type === "application/pdf") {
+          // Validate PDF file size and page count
+          if (!validatePdfFile(file, 5, 5, (message, type) => {
+            setError(message);
+          })) {
+            return;
+          }
+          
+          // Extract images from PDF for preview (max 3 pages for chat)
+          const result = await extractImagesFromPdf(file, 3, (message, type) => {
+            setError(message);
+          });
+          
+          if (result) {
+            // Set the extracted images for preview
+            setSelectedFiles(result.extractedImages);
+            
+            // Store the raw PDF for later upload (don't upload immediately)
+            setRawFilesForUpload([result.originalPdf]);
+            
+            // Show success message
+            setError("🐾 Woof! PDF pasted successfully! Extracted images will be sent for modification.");
+          }
+        } else {
+          // For non-PDF files, handle normally (don't upload immediately)
+          setSelectedFiles([file]);
+          setRawFilesForUpload([file]);
+          
+          // Show success message
+          setError("🐾 Woof! File pasted successfully!");
+        }
+      } else {
+        // No files in clipboard, allow default text paste behavior
+        // Don't call preventDefault() so text can be pasted normally
+      }
     },
-    []
+    [setSelectedFiles, setRawFilesForUpload, setError]
   );
 
   const handleKeyPress = useCallback(
