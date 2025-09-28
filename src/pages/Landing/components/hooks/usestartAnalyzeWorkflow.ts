@@ -97,15 +97,13 @@ export function useProjectWorkflow({
 
         // Build enhanced prompt with PDF file information
         let enhancedPrompt = userPrompt;
-        
         if (uploadedPdfFiles.length > 0) {
           const pdfInfo = uploadedPdfFiles.map(pdf => `${pdf.name} - ${pdf.url}`).join('\n');
-          enhancedPrompt += `\n\n${pdfInfo}`;
-          
-          
+          let resume_url = uploadedPdfFiles.map(pdf => `${pdf.url}`).toString();
+          // enhancedPrompt += `\n\n${pdfInfo}`;
+          enhancedPrompt += `\n\nIf site type = portfolio: place a primary 'Download Résumé' button in the hero + a footer link, both targeting the ${resume_url? resume_url: ""}, new tab + download attribute, accessible label, high-contrast styling, mobile-tap friendly. If link is absent or unreachable, omit. Use only given link; no other storage URLs.`;
         }
-        enhancedPrompt += '\n\nIf this website is being generated as a portfolio, please also include a prominent "Download Resume" button that links to the uploaded resume.';
-
+          
         const formData = new FormData();
         formData.append("prompt", enhancedPrompt);
         formData.append("userId", dbUser!.id.toString());
@@ -125,7 +123,7 @@ export function useProjectWorkflow({
         selectedImages.forEach((image) => {
           formData.append("images", image);
         });
-
+        console.log("The enhanced PROMPT -->", enhancedPrompt);
         const analyzeResponse = await axios.post(
           `${BASE_URL}/api/design/analyze`,
           formData,
