@@ -123,7 +123,7 @@ export const extractImagesFromPdf = async (
  */
 export const validatePdfFile = (
   pdfFile: File,
-  maxSizeMB: number = 3.75,
+  maxSizeMB: number = 5,
   pageSizeLimit: number = 5,
   showToast: (message: string, type: "success" | "error", duration?: number) => void
 ): boolean => {
@@ -136,5 +136,7 @@ export const validatePdfFile = (
     return false;
   }
 
+  // Note: Page count validation is handled in extractImagesFromPdf function
+  // This function only validates file size
   return true;
 };

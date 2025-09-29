@@ -105,7 +105,7 @@ export function useProjectWorkflow({
         }
           
         const formData = new FormData();
-        formData.append("prompt", enhancedPrompt);
+        formData.append("prompt", userPrompt);
         formData.append("userId", dbUser!.id.toString());
         formData.append("projectId", projectId.toString());
         formData.append(
@@ -123,7 +123,7 @@ export function useProjectWorkflow({
         selectedImages.forEach((image) => {
           formData.append("images", image);
         });
-        console.log("The enhanced PROMPT -->", enhancedPrompt);
+        
         const analyzeResponse = await axios.post(
           `${BASE_URL}/api/design/analyze`,
           formData,

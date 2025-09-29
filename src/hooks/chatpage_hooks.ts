@@ -7,7 +7,7 @@ import { useAuth } from "@clerk/clerk-react";
 import { StreamingCodeParser } from "../pages/streaming";
 import { WorkflowStateManager } from "../utils/workflowStateManager";
 import { uploadFilesToDatabase } from "../utils/fileUpload";
-import { validateFile } from "../utils/fileValidation";
+import { validateFile, validateModificationLimits } from "../utils/fileValidation";
 import { extractImagesFromPdf, validatePdfFile } from "../utils/pdfExtraction";
 
 import type {
@@ -786,56 +786,82 @@ export const useChatPageLogic = (
     async (event: React.ChangeEvent<HTMLInputElement>) => {
       const files = Array.from(event.target.files || []);
       
-      // Only allow one file at a time
-      if (files.length > 1) {
-        setError("🐾 Arf! Only one file at a time, please!");
-        return;
-      }
-
       if (files.length === 0) return;
 
-      const file = files[0];
+      // First, validate all files and calculate projected counts
+      let projectedSelectedFiles = [...selectedFiles];
+      let projectedRawFiles = [...rawFilesForUpload];
       
-      // Validate file using our validation utility
-      const validation = await validateFile(file);
-      if (validation !== true) {
-        setError(validation as string);
-        // Clear the input to allow re-selection and re-trigger toast
-        if (event.target) {
-          event.target.value = '';
-        }
-        return;
-      }
-
-      // Handle PDF files specially - extract images for preview but store raw PDF
-      if (file.type === "application/pdf") {
-        // Validate PDF file size and page count
-        if (!validatePdfFile(file, 5, 5, (message, type) => {
-          setError(message);
-        })) {
-          // Clear the input to allow re-selection and re-trigger toast
+      for (const file of files) {
+        // Validate file using our validation utility
+        const validation = await validateFile(file);
+        if (validation !== true) {
+          setError(validation as string);
           if (event.target) {
             event.target.value = '';
           }
-          return;
+          return; // Exit entire function on validation failure
         }
 
-        // Extract images from PDF for preview (max 3 pages for chat)
-        const result = await extractImagesFromPdf(file, 3, (message, type) => {
-          setError(message);
-        });
-
-        if (result) {
-          // Set the extracted images for preview
-          setSelectedFiles(result.extractedImages);
-          
-          // Store the raw PDF for later upload (don't upload immediately)
-          setRawFilesForUpload([result.originalPdf]);
+        // Check modification limits (only for modification, not generation)
+        if (existingProject && currentProject?.status === "ready") {
+          const modificationValidation = await validateModificationLimits(
+            file,
+            projectedSelectedFiles,
+            projectedRawFiles
+          );
+          if (modificationValidation !== true) {
+            setError(modificationValidation as string);
+            if (event.target) {
+              event.target.value = '';
+            }
+            return; // Exit entire function on validation failure
+          }
         }
-      } else {
-        // For non-PDF files, handle normally (don't upload immediately)
-        setSelectedFiles([file]);
-        setRawFilesForUpload([file]);
+
+        // Update projected counts for next iteration
+        if (file.type === "application/pdf") {
+          // For PDFs, we'll add up to 3 extracted images
+          projectedSelectedFiles = [...projectedSelectedFiles, ...Array(3).fill(null).map((_, i) => new File([], `page_${i + 1}.png`))];
+          projectedRawFiles = [...projectedRawFiles, file];
+        } else {
+          // For non-PDF files, add 1 to each
+          projectedSelectedFiles = [...projectedSelectedFiles, file];
+          projectedRawFiles = [...projectedRawFiles, file];
+        }
+      }
+
+      // If all validations passed, now actually process the files
+      for (const file of files) {
+        // Handle PDF files specially - extract images for preview but store raw PDF
+        if (file.type === "application/pdf") {
+          // Validate PDF file size and page count
+          if (!validatePdfFile(file, 5, 5, (message, type) => {
+            setError(message);
+          })) {
+            if (event.target) {
+              event.target.value = '';
+            }
+            return;
+          }
+
+          // Extract images from PDF for preview (max 3 pages for chat)
+          const result = await extractImagesFromPdf(file, 3, (message, type) => {
+            setError(message);
+          });
+
+          if (result) {
+            // Add the extracted images to existing files (don't replace)
+            setSelectedFiles(prev => [...prev, ...result.extractedImages]);
+            
+            // Add the raw PDF to existing files (don't replace)
+            setRawFilesForUpload(prev => [...prev, result.originalPdf]);
+          }
+        } else {
+          // For non-PDF files, add to existing files (don't replace)
+          setSelectedFiles(prev => [...prev, file]);
+          setRawFilesForUpload(prev => [...prev, file]);
+        }
       }
 
       // Clear the input
@@ -843,15 +869,34 @@ export const useChatPageLogic = (
         event.target.value = "";
       }
     },
-    [setSelectedFiles, setError, uploadFilesToDatabaseHelper]
+    [setSelectedFiles, setError, uploadFilesToDatabaseHelper, existingProject, currentProject?.status, selectedFiles, rawFilesForUpload]
   );
 
   const removeFile = useCallback(
     (index: number) => {
-      setSelectedFiles((prev: File[]) => prev.filter((_, i) => i !== index));
-      setRawFilesForUpload((prev: File[]) => prev.filter((_, i) => i !== index));
+      // Get the file being removed
+      const fileToRemove = rawFilesForUpload[index];
+      
+      if (fileToRemove && fileToRemove.type === "application/pdf") {
+        // For PDFs, we need to remove the corresponding extracted images
+        // We'll use a more reliable approach: remove all extracted images that have the same originalPdfName
+        setSelectedFiles((prev) => 
+          prev.filter((file) => {
+            // Check if this is an extracted image from the PDF being removed
+            // Extracted images have originalPdfName property
+            const extractedImage = file as any;
+            return extractedImage.originalPdfName !== fileToRemove.name;
+          })
+        );
+      } else {
+        // For non-PDF files, remove the corresponding file from selectedFiles
+        setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+      }
+      
+      // Remove from rawFilesForUpload
+      setRawFilesForUpload((prev) => prev.filter((_, i) => i !== index));
     },
-    [setSelectedFiles, setRawFilesForUpload]
+    [setSelectedFiles, setRawFilesForUpload, rawFilesForUpload]
   );
 
   const clearSelectedFiles = useCallback(() => {
@@ -2269,18 +2314,20 @@ export const useChatPageLogic = (
       const currentPrompt = prompt;
       const currentFiles = [...rawFilesForUpload];
 
-      // Upload files to database when send is clicked
+      // Clear prompt and files immediately for better UX
+      setPrompt("");
+      setSelectedFiles([]);
+      setRawFilesForUpload([]);
+
+      // Upload files to database when send is clicked (async, don't wait)
       if (currentFiles.length > 0) {
-        await uploadFilesToDatabaseHelper(currentFiles);
+        uploadFilesToDatabaseHelper(currentFiles).catch(() => {
+          // Silent fail - don't block UI
+        });
       }
 
       // For modification request, use selectedFiles (extracted images) instead of rawFilesForUpload (raw PDFs)
       const filesForModification = [...selectedFiles];
-
-      // Clear prompt and files immediately
-      setPrompt("");
-      setSelectedFiles([]);
-      setRawFilesForUpload([]);
 
       await sendModificationRequest(
         currentPrompt,
@@ -2302,16 +2349,19 @@ export const useChatPageLogic = (
 
     setMessages((prev) => [...prev, newMessage]);
     const currentPrompt = prompt;
+    const currentFiles = [...rawFilesForUpload]; // Store files before clearing
     setPrompt("");
     
-    // Upload files to database when send is clicked (for workflow path too)
-    if (rawFilesForUpload.length > 0) {
-      await uploadFilesToDatabaseHelper(rawFilesForUpload);
-    }
-    
-    // Clear files for workflow path too (though they won't be used)
+    // Clear files immediately for better UX
     setSelectedFiles([]);
     setRawFilesForUpload([]);
+    
+    // Upload files to database when send is clicked (async, don't wait)
+    if (currentFiles.length > 0) {
+      uploadFilesToDatabaseHelper(currentFiles).catch(() => {
+        // Silent fail - don't block UI
+      });
+    }
 
     try {
       if (projectId) {
@@ -2387,6 +2437,34 @@ export const useChatPageLogic = (
           return;
         }
         
+        // Check modification limits (only for modification, not generation)
+        if (existingProject && currentProject?.status === "ready") {
+          // Calculate projected counts for validation
+          let projectedSelectedFiles = [...selectedFiles];
+          let projectedRawFiles = [...rawFilesForUpload];
+          
+          // Update projected counts based on file type
+          if (file.type === "application/pdf") {
+            // For PDFs, we'll add up to 3 extracted images
+            projectedSelectedFiles = [...projectedSelectedFiles, ...Array(3).fill(null).map((_, i) => new File([], `page_${i + 1}.png`))];
+            projectedRawFiles = [...projectedRawFiles, file];
+          } else {
+            // For non-PDF files, add 1 to each
+            projectedSelectedFiles = [...projectedSelectedFiles, file];
+            projectedRawFiles = [...projectedRawFiles, file];
+          }
+          
+          const modificationValidation = await validateModificationLimits(
+            file,
+            projectedSelectedFiles,
+            projectedRawFiles
+          );
+          if (modificationValidation !== true) {
+            setError(modificationValidation as string);
+            return;
+          }
+        }
+        
         // Handle PDF files specially - extract images for preview but store raw PDF
         if (file.type === "application/pdf") {
           // Validate PDF file size and page count
@@ -2402,22 +2480,18 @@ export const useChatPageLogic = (
           });
           
           if (result) {
-            // Set the extracted images for preview
-            setSelectedFiles(result.extractedImages);
+            // Add the extracted images to existing files (don't replace)
+            setSelectedFiles(prev => [...prev, ...result.extractedImages]);
             
-            // Store the raw PDF for later upload (don't upload immediately)
-            setRawFilesForUpload([result.originalPdf]);
+            // Add the raw PDF to existing files (don't replace)
+            setRawFilesForUpload(prev => [...prev, result.originalPdf]);
             
-            // Show success message
-            setError("🐾 Woof! PDF pasted successfully! Extracted images will be sent for modification.");
           }
         } else {
-          // For non-PDF files, handle normally (don't upload immediately)
-          setSelectedFiles([file]);
-          setRawFilesForUpload([file]);
+          // For non-PDF files, add to existing files (don't replace)
+          setSelectedFiles(prev => [...prev, file]);
+          setRawFilesForUpload(prev => [...prev, file]);
           
-          // Show success message
-          setError("🐾 Woof! File pasted successfully!");
         }
       } else {
         // No files in clipboard, allow default text paste behavior
