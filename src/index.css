@@ -1230,6 +1230,10 @@
   @apply mb-4 border-2 focus:outline-0 border-slate-400 rounded-lg text-slate-800 p-4 w-full h-36 bg-white backdrop-blur-sm transition-all duration-300 placeholder-slate-500 resize-none shadow-sm;
 }
 
+.textarea-main:disabled {
+  @apply bg-slate-100 text-slate-400 border-slate-300 cursor-not-allowed shadow-none;
+}
+
 /* Projects section */
 .projects-section {
   @apply w-full;
