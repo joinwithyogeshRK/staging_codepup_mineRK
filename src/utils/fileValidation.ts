@@ -99,3 +99,46 @@ export function validatePdfFileSync(file: File): Promise<boolean | string> {
     return Promise.resolve(true);
   }
 }
+
+/**
+ * Validates modification file limits (10 files max, 30MB total)
+ * @param newFile - The new file being added
+ * @param existingFiles - Array of existing files
+ * @param existingRawFiles - Array of existing raw files (for PDFs)
+ * @returns true if valid, error message string if invalid
+ */
+export async function validateModificationLimits(
+  newFile: File,
+  existingFiles: File[],
+  existingRawFiles: File[]
+): Promise<boolean | string> {
+  // Calculate what the total file count will be after adding this file
+  let totalFileCount = existingFiles.length;
+  
+  // If it's a PDF, we need to estimate how many images it will extract
+  if (newFile.type === "application/pdf") {
+    // For PDFs, we'll extract up to 3 pages, so add 3 to the count
+    totalFileCount += 3;
+  } else {
+    // For non-PDF files, add 1
+    totalFileCount += 1;
+  }
+  
+  // Check file count limit (10 max)
+  if (totalFileCount > 10) {
+    return "🐾 Arf! Too many files — our pup can only carry up to 10 files for modification.";
+  }
+  
+  // Calculate total size (including raw files for accurate size calculation)
+  const existingRawSize = existingRawFiles.reduce((total, file) => total + file.size, 0);
+  const totalSize = existingRawSize + newFile.size;
+  
+  // Check total size limit (30MB)
+  const maxTotalSize = 30 * 1024 * 1024; // 30MB in bytes
+  if (totalSize > maxTotalSize) {
+    const totalSizeMB = Math.round(totalSize / (1024 * 1024));
+    return `🐾 Arf! Total file size too big — our pup can only carry up to 30MB total (currently ${totalSizeMB}MB).`;
+  }
+  
+  return true;
+}

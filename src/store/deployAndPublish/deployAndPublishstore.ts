@@ -51,8 +51,6 @@ export const useDeployStore = create<DeployState>((set, get) => ({
         error: undefined,
       });
 
-      // Optionally: log to chat/messages store
-      console.log("✅ Deployment completed successfully", deployedUrl);
     } catch (err) {
       set({
         error: err instanceof Error ? err.message : "Unknown deployment error",

@@ -23,7 +23,6 @@ export async function loadMoreProjects({
     });
 
     const data = response.data;
-    console.log(data)
     if (!Array.isArray(data)) {
       return { projects: [], hasMore: false };
     }

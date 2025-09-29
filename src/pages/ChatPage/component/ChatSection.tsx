@@ -497,9 +497,16 @@ const ChatSection: React.FC<ChatSectionProps> = ({
         {rawFilesForUpload.length > 0 && (
           <div className="mb-3 p-2 bg-subtle rounded-lg border border-default">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-body">
-                1 file selected
-              </span>
+              <div className="flex flex-col">
+                <span className="text-xs text-body">
+                  {selectedFiles.length} file{selectedFiles.length !== 1 ? 's' : ''} selected
+                </span>
+                {existingProject && currentProject?.status === "ready" && (
+                  <span className="text-xs text-muted">
+                    {Math.round(rawFilesForUpload.reduce((total, file) => total + file.size, 0) / (1024 * 1024) * 10) / 10}MB / 30MB
+                  </span>
+                )}
+              </div>
               <button
                 onClick={clearSelectedFiles}
                 className="text-xs text-danger hover:text-danger-weak"
@@ -507,7 +514,7 @@ const ChatSection: React.FC<ChatSectionProps> = ({
                 Clear all
               </button>
             </div>
-            <div className="flex gap-2 overflow-visible">
+            <div className="flex flex-wrap gap-2">
               {rawFilesForUpload.map((file, index) => (
                 <div
                   key={index}
@@ -551,6 +558,7 @@ const ChatSection: React.FC<ChatSectionProps> = ({
           ref={fileInputRef}
           onChange={handleFileSelect}
           accept=".jpg,.jpeg,.png,.gif,.webp,.svg,.ico,.pdf"
+          multiple
           className="hidden"
         />
 
@@ -560,6 +568,7 @@ const ChatSection: React.FC<ChatSectionProps> = ({
           ref={unifiedFileInputRef}
           onChange={handleFileSelect}
           accept=".jpg,.jpeg,.png,.gif,.webp,.svg,.ico,.pdf"
+          multiple
           className="hidden"
         />
 
