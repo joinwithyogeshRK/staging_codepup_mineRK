@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useState } from "react";
 import { Check, Sparkles, Zap, Crown, Rocket, X } from "lucide-react";
-import { useUser } from "@clerk/clerk-react";
+import { useUser, useAuth } from "@clerk/clerk-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
 
 const defaultPackages = [
@@ -70,8 +70,8 @@ const PrizeModel: React.FC<PrizeModelProps> = ({ isOpen, onClose }) => {
   const [successOpen, setSuccessOpen] = useState(false);
   const [successData, setSuccessData] = useState<{
     paymentId: string;
-    creditsAwarded: number;
-    newBalance: number;
+    orderId: string;
+    signature: string;
     packName: string;
     amountInRupees: number;
   } | null>(null);
@@ -118,12 +118,13 @@ const PrizeModel: React.FC<PrizeModelProps> = ({ isOpen, onClose }) => {
           setLoadingIndex(null);
           return;
         }
-
+        // const token = await getToken()
         const pkgId = packageIdByIndex[index];
         const res = await fetch(`${BASE_URL}/api/payments/create-order`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+          // ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
           body: JSON.stringify({ clerkId, packageId: pkgId }),
         });
@@ -148,40 +149,16 @@ const PrizeModel: React.FC<PrizeModelProps> = ({ isOpen, onClose }) => {
           order_id: data.order.id,
           name: "CodePup",
           description: `${data.order.package?.name ?? "CodePup Pack"}`,
-          handler: async (response: any) => {
-            // Payment success callback - verify with backend first
-            try {
-              const verifyResponse = await fetch(`${BASE_URL}/api/payments/verify`, {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  razorpay_order_id: response.razorpay_order_id,
-                  razorpay_payment_id: response.razorpay_payment_id,
-                  razorpay_signature: response.razorpay_signature,
-                  clerkId: clerkId,
-                }),
-              });
-
-              const verifyData = await verifyResponse.json();
-
-              if (verifyData.success) {
-                setSuccessData({
-                  paymentId: verifyData.data.paymentId,
-                  creditsAwarded: verifyData.data.creditsAwarded,
-                  newBalance: verifyData.data.newBalance,
-                  packName: data.order.package?.name ?? "CodePup Pack",
-                  amountInRupees: Math.round((data.order.amount / 100) * 100) / 100,
-                });
-                setSuccessOpen(true);
-              } else {
-                setErrorMessage("Payment verification failed. Please contact support.");
-              }
-            } catch (error) {
-              console.error("Payment verification error:", error);
-              setErrorMessage("Payment verification failed. Please contact support.");
-            }
+          handler: (response: any) => {
+            // Payment success callback (show dialog)
+            setSuccessData({
+              paymentId: response.razorpay_payment_id,
+              orderId: response.razorpay_order_id,
+              signature: response.razorpay_signature,
+              packName: data.order.package?.name ?? "CodePup Pack",
+              amountInRupees: Math.round((data.order.amount / 100) * 100) / 100,
+            });
+            setSuccessOpen(true);
           },
           prefill: {
             name: user?.fullName ?? "",
@@ -324,6 +301,23 @@ const PrizeModel: React.FC<PrizeModelProps> = ({ isOpen, onClose }) => {
                       </div> 
                     </div>
 
+                      {/* Buy Button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleBuyClick(index);
+                      }}
+                      disabled={loadingIndex === index}
+                      className={`w-full py-3 px-4 mb-3 rounded-xl font-semibold transition-all duration-300 border 
+                        ${
+                          loadingIndex === index
+                            ? "bg-gray-200 text-gray-500 cursor-not-allowed border-gray-300"
+                            : "bg-blue-600 text-white hover:bg-blue-700 border-blue-700"
+                        }`}
+                    >
+                      {loadingIndex === index ? "Processing..." : "Buy Now"}
+                    </button>
+
                     {/* Features */}
                     <div className="space-y-3 mb-6">
                       {pkg.features.map((feature, idx) => (
@@ -336,22 +330,7 @@ const PrizeModel: React.FC<PrizeModelProps> = ({ isOpen, onClose }) => {
                       ))}
                     </div>
 
-                    {/* Buy Button */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleBuyClick(index);
-                      }}
-                      disabled={loadingIndex === index}
-                      className={`w-full py-3 px-4 rounded-xl font-semibold transition-all duration-300 border 
-                        ${
-                          loadingIndex === index
-                            ? "bg-gray-200 text-gray-500 cursor-not-allowed border-gray-300"
-                            : "bg-blue-600 text-white hover:bg-blue-700 border-blue-700"
-                        }`}
-                    >
-                      {loadingIndex === index ? "Processing..." : "Buy Now"}
-                    </button>
+                    
                   </div>
                 </div>
               </div>
@@ -378,30 +357,22 @@ const PrizeModel: React.FC<PrizeModelProps> = ({ isOpen, onClose }) => {
               Our pup fetched your pack successfully. Here are your payment details.
             </DialogDescription>
           </DialogHeader>
-            {successData && (
-              <div className="space-y-3 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Pack</span>
-                  <span className="font-medium">{successData.packName}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Amount</span>
-                  <span className="font-medium">₹{successData.amountInRupees}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Credits Awarded</span>
-                  <span className="font-medium text-green-600">+{successData.creditsAwarded}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">New Balance</span>
-                  <span className="font-medium">{successData.newBalance}</span>
-                </div>
-                <div className="flex items-center justify-between break-all">
-                  <span className="text-gray-600">Payment ID</span>
-                  <span className="font-mono text-xs">{successData.paymentId}</span>
-                </div>
+          {successData && (
+            <div className="space-y-3 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">Pack</span>
+                <span className="font-medium">{successData.packName}</span>
               </div>
-            )}
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">Amount</span>
+                <span className="font-medium">₹{successData.amountInRupees}</span>
+              </div>
+              <div className="flex items-center justify-between break-all">
+                <span className="text-gray-600">Payment ID</span>
+                <span className="font-mono">{successData.paymentId}</span>
+              </div>
+            </div>
+          )}
           <DialogFooter>
             <button
               className="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-white font-semibold hover:bg-blue-700 transition-colors"

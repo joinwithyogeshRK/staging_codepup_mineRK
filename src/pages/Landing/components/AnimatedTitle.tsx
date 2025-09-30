@@ -11,7 +11,8 @@ const AnimatedTitle: React.FC = () => {
         ease: "easeOut",
         delay: 0.3,
       }}
-      className="flex-center mb-8"
+      className="flex flex-col items-center justify-center md:flex-row mb-8 mt-10 "
+      // className="flex flex-col items-center justify-center mb-8 mt-10 "
     >
       {/* Logo */}
       <motion.div
@@ -37,7 +38,7 @@ const AnimatedTitle: React.FC = () => {
 
       {/* Title */}
       <motion.h1
-        className="text-6xl px-2 md:text-8xl bg-gradient-to-b tracking-tighter from-slate-800 via-slate-700 to-transparent bg-clip-text text-transparent font-bold"
+        className="text-6xl px-2 md:text-8xl text-gray-800 font-bold tracking-tighter"
         animate={{
           textShadow: [
             "0 0 0px rgba(255,255,255,0)",
