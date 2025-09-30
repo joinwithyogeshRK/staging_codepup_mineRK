@@ -22,7 +22,7 @@ function App() {
             <Route path="/" element={<Index />} />
             <Route path="/chatPage/:projectId" element={<ChatPage />} />
             <Route path="/hackathon" element={<HackathonShowcase />} />
-
+            
             {/* <Route path="/hackathon" element={<HackathonOverComponent/>} /> */}
             <Route path="/submit" element={<HackathonShowcase />} />
             <Route path="/gallery" element={<ProjectGallery />} />

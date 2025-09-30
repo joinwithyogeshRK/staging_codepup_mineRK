@@ -61,13 +61,14 @@ import {
   GalleryHorizontal,
   GalleryHorizontalIcon,
   Images,
+  CreditCard,
 } from "lucide-react";
 import SupabaseConfigForm from "../form"; // Import the form component
 import ImageUploadSection from "@/components/Image-upload-component";
 import { normalizeDisplayStep } from "./components/utils/displayStepUtils";
 import { computeProjectStats } from "./components/utils/projectStatsUtils";
 import { useToast } from "@/helper/Toast";
-import { useProjectWorkflow } from "./components/hooks/usestartAnalyzeWorkflow"
+import { useProjectWorkflow } from "./components/hooks/usestartAnalyzeWorkflow";
 import { amplitude } from "../../utils/amplitude";
 import { uploadFilesToDatabase } from "../../utils/fileUpload";
 import type {
@@ -81,7 +82,8 @@ import type {
 } from "./components/types/types";
 import { useEvaluateRewards } from "./components/hooks/useEvaluateRewards";
 import AnimatedTitle from "./components/AnimatedTitle";
-import { encodeId , decodeId } from "@/utils/hashids";
+import { encodeId, decodeId } from "@/utils/hashids";
+import PrizeModel, { usePrizeModal } from "@/components/PrizeModel";
 
 // --- Constants ---
 const BASE_URL = import.meta.env.VITE_BASE_URL;
@@ -131,6 +133,7 @@ FeedbackInput.displayName = "FeedbackInput";
 
 // --- Main Component ---
 const Index = () => {
+  const { isOpen: isPrizeModalOpen, openModal: openPrizeModal, closeModal: closePrizeModal } = usePrizeModal();
   const [prompt, setPrompt] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -279,7 +282,7 @@ const Index = () => {
     currentStep,
     readyToGenerate,
     showDesignPreview,
-  ]); 
+  ]);
 
   // Start analyze workflow after project creation
   const { clickSubmit, startAnalyzeWorkflow } = useProjectWorkflow({
@@ -589,13 +592,13 @@ const Index = () => {
   }, [isLoaded, clerkUser, fetchCredits]);
 
   // Evaluate rewards only after user sync is completed and credits payload is available
-  const {
-    activeReward,
-    setActiveReward,
-    rewardsEvaluated,
-    resetRewards,
-  } = useEvaluateRewards({ userPayload, creditsPayload, didSyncUser, fetchCredits });
-  
+  const { activeReward, setActiveReward, rewardsEvaluated, resetRewards } =
+    useEvaluateRewards({
+      userPayload,
+      creditsPayload,
+      didSyncUser,
+      fetchCredits,
+    });
 
   // Separate polling: after user sync, if brand-new user and credits not ready (total === 0) try a few times to refresh top-right credits
   useEffect(() => {
@@ -736,7 +739,6 @@ const Index = () => {
         transition={{ duration: 1 }}
         className="page-container"
       >
-
         {/* Animated background particles */}
         <div className="animated-background">
           {Array.from({ length: 50 }).map((_, i) => (
@@ -844,6 +846,16 @@ const Index = () => {
           </Link>
 
           <SignedIn>
+            {/* Pricing Button */}
+            <button
+              onClick={openPrizeModal}
+              className="flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg text-slate-800 hover:bg-slate-100 transition-colors"
+              title="Pricing"
+            >
+              <CreditCard className="w-5 h-5 text-blue-600" />
+              <span className="hidden sm:inline font-medium">Pricing</span>
+            </button>
+
             <Link
               to="/hackathon"
               className="hidden md:flex items-center gap-2 px-3 py-2 rounded-lg text-slate-800 hover:bg-slate-100 transition-colors"
@@ -881,7 +893,7 @@ const Index = () => {
         {/* Main Content Container */}
         <div className="page-content">
           {/* Title */}
-         <AnimatedTitle/>
+          <AnimatedTitle />
 
           {/* Backend Status Message */}
           {backendStatus === "limited" && (
@@ -907,8 +919,7 @@ const Index = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="workflow-container mb-12"
-              >
-              </motion.div>
+              ></motion.div>
             ) : (
               // Show either project type selector OR normal prompt input
               <>
@@ -972,7 +983,9 @@ const Index = () => {
                           }
                           className="textarea-main"
                           disabled={
-                            (selectedProjectType === "fullstack" && !isConfigValid) || workflowActive
+                            (selectedProjectType === "fullstack" &&
+                              !isConfigValid) ||
+                            workflowActive
                           }
                         />
 
@@ -1157,7 +1170,7 @@ const Index = () => {
         <RewardModal
           message={activeReward}
           onClose={() => {
-            setActiveReward(null);          
+            setActiveReward(null);
           }}
         />
       )}
@@ -1175,6 +1188,9 @@ const Index = () => {
           selectedDesignForPreview ? "Design Preview" : "Project Preview"
         }
       />
+
+      {/* Pricing Modal */}
+      <PrizeModel isOpen={isPrizeModalOpen} onClose={closePrizeModal} />
     </>
   );
 };

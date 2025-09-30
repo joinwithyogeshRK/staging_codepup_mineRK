@@ -858,7 +858,8 @@
 
 /* Main layout and containers */
 .page-container {
-  @apply bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200 min-h-screen min-w-full flex flex-col items-center justify-center relative overflow-hidden;
+  /* Let the global background image show through */
+  @apply min-h-screen min-w-full flex flex-col items-center justify-center relative overflow-hidden;
 }
 
 .page-content {
@@ -1561,7 +1562,7 @@
 }
 
 .project-type-selector-title {
-  @apply text-3xl font-bold text-slate-800 mb-4;
+  @apply text-2xl lg:text-3xl font-bold text-slate-800 lg:mb-4;
 }
 
 .project-type-selector-subtitle {
@@ -2242,6 +2243,12 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Global background image covering entire site */
+    /* background-image: url('/full-bg.jpeg');
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-attachment: fixed; */
   }
 }
 
