@@ -63,6 +63,7 @@ interface PrizeModelProps {
 
 const PrizeModel: React.FC<PrizeModelProps> = ({ isOpen, onClose }) => {
   const { user } = useUser();
+  const { getToken } = useAuth();
   const [selectedPackage, setSelectedPackage] = useState<number | null>(null);
   const [isHovered, setIsHovered] = useState<number | null>(null);
   const [loadingIndex, setLoadingIndex] = useState<number | null>(null);
@@ -118,13 +119,13 @@ const PrizeModel: React.FC<PrizeModelProps> = ({ isOpen, onClose }) => {
           setLoadingIndex(null);
           return;
         }
-        // const token = await getToken()
+        const token = await getToken();
         const pkgId = packageIdByIndex[index];
         const res = await fetch(`${BASE_URL}/api/payments/create-order`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-          // ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
           body: JSON.stringify({ clerkId, packageId: pkgId }),
         });
@@ -179,7 +180,7 @@ const PrizeModel: React.FC<PrizeModelProps> = ({ isOpen, onClose }) => {
         setLoadingIndex(null);
       }
     },
-    [BASE_URL, loadRazorpayScript, packageIdByIndex, user]
+    [BASE_URL, loadRazorpayScript, packageIdByIndex, user, getToken]
   );
 
   if (!isOpen) return null;
