@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from "react";
-import { Check, Sparkles, Zap, Crown, Rocket, X } from "lucide-react";
+import { Check, Sparkles, Zap, Crown, Rocket, X, PawPrint } from "lucide-react";
 import { useUser, useAuth } from "@clerk/clerk-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
 
@@ -76,6 +76,7 @@ const PrizeModel: React.FC<PrizeModelProps> = ({ isOpen, onClose }) => {
     packName: string;
     amountInRupees: number;
   } | null>(null);
+  const [showComingSoon, setShowComingSoon] = useState(false);
 
   const BASE_URL = useMemo(() => import.meta.env.VITE_BASE_URL as string, []);
 
@@ -306,17 +307,14 @@ const PrizeModel: React.FC<PrizeModelProps> = ({ isOpen, onClose }) => {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleBuyClick(index);
+                        setShowComingSoon(true);
+                        setTimeout(() => setShowComingSoon(false), 2000);
                       }}
-                      disabled={loadingIndex === index}
+                      disabled={false}
                       className={`w-full py-3 px-4 mb-3 rounded-xl font-semibold transition-all duration-300 border 
-                        ${
-                          loadingIndex === index
-                            ? "bg-gray-200 text-gray-500 cursor-not-allowed border-gray-300"
-                            : "bg-blue-600 text-white hover:bg-blue-700 border-blue-700"
-                        }`}
+                        bg-blue-600 text-white hover:bg-blue-700 border-blue-700`}
                     >
-                      {loadingIndex === index ? "Processing..." : "Buy Now"}
+                      Buy Now
                     </button>
 
                     {/* Features */}
@@ -348,6 +346,25 @@ const PrizeModel: React.FC<PrizeModelProps> = ({ isOpen, onClose }) => {
           )}
         </div>
       </div>
+
+      {/* Floating Coming Soon Snackbar */}
+      {showComingSoon && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center animate-fadeIn pointer-events-none">
+          <div className="pointer-events-auto flex items-center gap-3 px-6 py-5 rounded-2xl bg-[#8B5E3C] text-white shadow-2xl border border-white/20">
+            <PawPrint className="w-6 h-6 text-white/95" />
+            <div className="text-lg md:text-xl font-bold whitespace-nowrap">
+              Coming soon for our pack!
+            </div>
+            <button
+              onClick={() => setShowComingSoon(false)}
+              className="ml-1 inline-flex items-center justify-center text-white/80 hover:text-white"
+              aria-label="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Success Dialog */}
       <Dialog open={successOpen} onOpenChange={setSuccessOpen}>
