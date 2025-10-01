@@ -1,3 +1,5 @@
+import * as pdfjsLib from 'pdfjs-dist';
+
 /**
  * Validates a file for upload with specific restrictions
  * @param file - The file to validate
@@ -101,7 +103,7 @@ export function validatePdfFileSync(file: File): Promise<boolean | string> {
 }
 
 /**
- * Validates modification file limits (10 files max, 30MB total)
+ * Validates modification file limits (2 PDFs max 5 pages each, 10 images max)
  * @param newFile - The new file being added
  * @param existingFiles - Array of existing files
  * @param existingRawFiles - Array of existing raw files (for PDFs)
@@ -112,21 +114,34 @@ export async function validateModificationLimits(
   existingFiles: File[],
   existingRawFiles: File[]
 ): Promise<boolean | string> {
-  // Calculate what the total file count will be after adding this file
-  let totalFileCount = existingFiles.length;
+  // Count existing files by type
+  const existingPdfs = existingRawFiles.filter(file => file.type === "application/pdf");
+  const existingImages = existingFiles.filter(file => file.type.startsWith("image/"));
   
-  // If it's a PDF, we need to estimate how many images it will extract
+  // Check PDF limits (max 2 PDFs, max 5 pages each)
   if (newFile.type === "application/pdf") {
-    // For PDFs, we'll extract up to 3 pages, so add 3 to the count
-    totalFileCount += 3;
-  } else {
-    // For non-PDF files, add 1
-    totalFileCount += 1;
+    if (existingPdfs.length >= 2) {
+      return "🐾 Arf! Too many PDFs — our pup can only carry up to 2 PDFs for modification.";
+    }
+    
+    // Check page count for the new PDF
+    try {
+      const arrayBuffer = await newFile.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      
+      if (pdf.numPages > 5) {
+        return `🐾 Arf! "${newFile.name}" has ${pdf.numPages} pages. Our pup can only handle up to 5 pages per PDF.`;
+      }
+    } catch (error) {
+      return "🐾 Arf! Could not validate PDF file. Please try a different file.";
+    }
   }
   
-  // Check file count limit (10 max)
-  if (totalFileCount > 10) {
-    return "🐾 Arf! Too many files — our pup can only carry up to 10 files for modification.";
+  // Check image limits (max 10 images total)
+  if (newFile.type.startsWith("image/")) {
+    if (existingImages.length >= 10) {
+      return "🐾 Arf! Too many images — our pup can only carry up to 10 images for modification.";
+    }
   }
   
   // Calculate total size (including raw files for accurate size calculation)
