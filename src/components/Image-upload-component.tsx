@@ -294,18 +294,12 @@ const ImageUploadSection = ({
 
                 {/* Show other docs (xlsx, md, csv) */}
                 {docFiles.map((doc) => (
-                  <div key={`doc-${doc.name}`} className="image-preview-item flex items-center justify-between px-3 py-2">
-                    <div className="flex items-center gap-2">
-                      <FileText className="w-4 h-4" />
-                      <span className="text-sm truncate max-w-[200px]" title={doc.name}>{doc.name}</span>
-                    </div>
-                    <button
-                      onClick={() => removeDocFile(doc.name)}
-                      className="image-preview-remove"
-                    >
-                      ×
-                    </button>
-                  </div>
+                  <PdfPreview
+                    key={`doc-${doc.name}`}
+                    file={doc}
+                    onRemove={() => removeDocFile(doc.name)}
+                    size="medium"
+                  />
                 ))}
 
                 {/* Show standalone images */}

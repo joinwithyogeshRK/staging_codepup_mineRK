@@ -1226,6 +1226,7 @@ const Index = () => {
             setCurrentProjectId(newProject.id);
             setShowProjectTypeSelector(false);
             setPrompt("");
+            setIsConfigValid(true);
           } catch (e) {}
         }}
       />
