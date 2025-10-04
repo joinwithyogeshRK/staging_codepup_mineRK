@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from "react";
 import { Upload, ImageIcon, FileText, Lightbulb } from "lucide-react";
 import PdfPreview from "./pdfpreview";
-import { extractImagesFromPdf, validatePdfFile, type ExtractedImageFile } from "../utils/pdfExtraction";
+import { validateFile } from "../utils/fileValidation";
 import { useToast } from "../helper/Toast";
 
 interface ImageUploadSectionProps {
@@ -22,6 +22,7 @@ const ImageUploadSection = ({
 }: ImageUploadSectionProps) => {
   const [isProcessingPdf, setIsProcessingPdf] = useState(false);
   const [pdfGroups, setPdfGroups] = useState<{ [key: string]: File[] }>({});
+  const [docFiles, setDocFiles] = useState<File[]>([]); // csv, md, xlsx
   const { showToast } = useToast();
 
 
@@ -30,22 +31,42 @@ const ImageUploadSection = ({
       const newFiles = Array.from(e.target.files || []);
       if (newFiles.length === 0) return;
 
-      // Separate PDFs and images
-      const imageFiles = newFiles.filter((file: File) =>
+      // Filter by allowed types using validateFile (type-gating only)
+      const allowedFiles: File[] = [];
+      for (const file of newFiles) {
+        const result = await validateFile(file);
+        if (result === true) {
+          allowedFiles.push(file);
+          continue;
+        }
+        if (typeof result === "string") {
+          // Only block unsupported type; other limits are handled locally
+          if (result.includes("Unsupported file type")) {
+            showToast(result, "error");
+            continue;
+          }
+          // For other messages from validateFile, we do not block here
+          allowedFiles.push(file);
+        }
+      }
+
+      // Separate PDFs, images, and other supported docs from allowed files
+      const imageFiles = allowedFiles.filter((file: File) =>
         file.type.startsWith("image/")
       );
-      const pdfFiles = newFiles.filter(
+      const pdfFiles = allowedFiles.filter(
         (file: File) => file.type === "application/pdf"
       );
-
-      // Check if we have unsupported files
-      const supportedFiles = imageFiles.length + pdfFiles.length;
-      if (supportedFiles !== newFiles.length) {
-        showToast(
-          "Woof! 🐾 Our pup only accepts images (PNG, JPG, JPEG, WEBP) or PDFs.",
-          "error"
+      const otherDocFiles = allowedFiles.filter((file: File) => {
+        const lower = file.name.toLowerCase();
+        return (
+          lower.endsWith(".csv") ||
+          lower.endsWith(".md") ||
+          lower.endsWith(".xlsx")
         );
-      }
+      });
+
+      // Check if we have unsupported files (already handled via validateFile). No-op here.
 
       let allImageFiles = [...imageFiles];
 
@@ -59,52 +80,53 @@ const ImageUploadSection = ({
         });
       }
 
-      // Process PDF files if any - CONVERT TO IMAGES (for UI preview only)
+      // Keep PDFs as-is for backend; update PDF preview groups (no extraction)
       if (pdfFiles.length > 0) {
-        setIsProcessingPdf(true);
-        try {
-          for (const pdfFile of pdfFiles) {
-            // Validate PDF file
-            if (!validatePdfFile(pdfFile, 3.75, 5, showToast)) {
-              continue;
-            }
-
-            // Extract images from PDF using utility function
-            const result = await extractImagesFromPdf(pdfFile, 5, showToast);
-            if (result && result.extractedImages.length > 0) {
-              // Group the images by PDF name for preview purposes
-              setPdfGroups((prev) => ({
-                ...prev,
-                [pdfFile.name]: result.extractedImages,
-              }));
-
-              allImageFiles.push(...result.extractedImages);
+        if (typeof setSelectedPdfs === 'function') {
+          setSelectedPdfs((prev: File[]) => {
+            const existingKeys = new Set(prev.map((f) => `${f.name}:${f.size}`));
+            const toAdd = pdfFiles.filter((f) => !existingKeys.has(`${f.name}:${f.size}`));
+            return [...prev, ...toAdd];
+          });
+        }
+        // Track for local preview (avoid duplicates)
+        setPdfGroups((prev) => {
+          const updated = { ...prev };
+          for (const pdf of pdfFiles) {
+            const key = pdf.name; // keep key by name for remove compatibility
+            if (!updated[key]) {
+              updated[key] = [pdf];
             }
           }
-        } finally {
-          setIsProcessingPdf(false);
+          return updated;
+        });
+      }
+
+      // Track other docs (xlsx, md, csv): push to selectedPdfs pathway and keep local list
+      if (otherDocFiles.length > 0) {
+        if (typeof setSelectedPdfs === 'function') {
+          setSelectedPdfs((prev: File[]) => {
+            const existingKeys = new Set(prev.map((f) => `${f.name}:${f.size}`));
+            const toAdd = otherDocFiles.filter((f) => !existingKeys.has(`${f.name}:${f.size}`));
+            return [...prev, ...toAdd];
+          });
         }
+        setDocFiles((prev) => {
+          const existingKeys = new Set(prev.map((f) => `${f.name}:${f.size}`));
+          const toAdd = otherDocFiles.filter((f) => !existingKeys.has(`${f.name}:${f.size}`));
+          return [...prev, ...toAdd];
+        });
       }
 
       // Remove duplicates: prevent re-adding the same standalone image or same PDF page
       const existingKeys = new Set(
-        selectedImages.map((img: File) => {
-          const originalPdfName = (img as any).originalPdfName;
-          const pageNumber = (img as any).pageNumber;
-          return originalPdfName
-            ? `pdf:${originalPdfName}:${pageNumber}`
-            : `img:${img.name}:${img.size}`;
-        })
+        selectedImages.map((img: File) => `img:${img.name}:${img.size}`)
       );
 
       const batchKeys = new Set<string>();
       const dedupedFiles: File[] = [];
       for (const file of allImageFiles) {
-        const originalPdfName = (file as any).originalPdfName;
-        const pageNumber = (file as any).pageNumber;
-        const key = originalPdfName
-          ? `pdf:${originalPdfName}:${pageNumber}`
-          : `img:${file.name}:${file.size}`;
+        const key = `img:${file.name}:${file.size}`;
 
         if (existingKeys.has(key) || batchKeys.has(key)) {
           continue;
@@ -117,10 +139,9 @@ const ImageUploadSection = ({
         showToast("Woof! 🐾 That file is already in the basket. No double treats allowed!", "error");
       }
 
-      // Validate image files
+      // Validate image files (and treat PDFs the same for size limits)
       const validImageFiles: File[] = [];
       for (const file of dedupedFiles) {
-        // Check file size
         if ((file as File).size > 3.75 * 1024 * 1024) {
           showToast(
             `Ruff! 🐶 "${(file as File).name}" is too big for our pup to carry. Max size is 3.75MB.`,
@@ -195,6 +216,13 @@ const ImageUploadSection = ({
     }
   };
 
+  const removeDocFile = (name: string) => {
+    setDocFiles((prev) => prev.filter((f) => f.name !== name));
+    if (typeof setSelectedPdfs === 'function') {
+      setSelectedPdfs((prev) => prev.filter((f) => f.name !== name));
+    }
+  };
+
   const removeStandaloneImage = (index: number) => {
     const { standaloneImages } = getImageGroups();
     const imageToRemove = standaloneImages[index];
@@ -211,7 +239,7 @@ const ImageUploadSection = ({
         <input
           type="file"
           multiple
-          accept="image/*,.pdf"
+          accept="image/*,.pdf,.csv,.md,.xlsx"
           onChange={handleFileSelect}
           className="image-upload-input"
           id="image-upload"
@@ -222,20 +250,10 @@ const ImageUploadSection = ({
         />
         <label
           htmlFor="image-upload"
-          className={`image-upload-area ${
-            isProcessingPdf
-              ? "image-upload-area-processing"
-              : "image-upload-area-enabled"
-          }`}
+          className={`image-upload-area ${"image-upload-area-enabled"}`}
         >
           <div className="image-upload-content">
-            {isProcessingPdf ? (
-              <>
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                <p className="image-upload-text">Processing PDF...</p>
-              </>
-            ) : (
-              <>
+            <>
                 <Upload className="image-upload-icon" />
                 
                 <div className="image-upload-hint">
@@ -246,38 +264,45 @@ const ImageUploadSection = ({
                     {/* <li>Max 5 files total, up to 3.75MB each.</li> */}
                   </ul>
                 </div>
-              </>
-            )}
+            </>
           </div>
         </label>
       </div>
 
-      {/* Selected images preview */}
-      {selectedImages.length > 0 && (
+      {/* Selected files preview */}
+      {(Object.keys(pdfGroups).length > 0 || docFiles.length > 0 || selectedImages.length > 0) && (
         <div className="image-preview-container">
           {(() => {
+            // Render PDF previews from tracked pdfGroups
+            const pdfEntries = Object.entries(pdfGroups);
             const { groups, standaloneImages } = getImageGroups();
 
             return (
               <>
-                {/* Show PDF groups using your existing PdfPreview component */}
-                {Object.entries(groups).map(([pdfName, images]) => {
-                  // Create a mock PDF file object for the PdfPreview component
-                  const mockPdfFile = new File([], pdfName, {
-                    type: "application/pdf",
-                  });
-
+                {/* Show PDF previews */}
+                {pdfEntries.map(([key, files]) => {
+                  const pdfFile = files[0];
                   return (
                     <PdfPreview
-                      key={pdfName}
-                      file={mockPdfFile}
-                      onRemove={() => removePdfGroup(pdfName)}
+                      key={key}
+                      file={pdfFile}
+                      onRemove={() => removePdfGroup(pdfFile.name)}
                       size="medium"
                     />
                   );
                 })}
 
-                {/* Show standalone images normally */}
+                {/* Show other docs (xlsx, md, csv) */}
+                {docFiles.map((doc) => (
+                  <PdfPreview
+                    key={`doc-${doc.name}`}
+                    file={doc}
+                    onRemove={() => removeDocFile(doc.name)}
+                    size="medium"
+                  />
+                ))}
+
+                {/* Show standalone images */}
                 {standaloneImages.map((image: File, index: number) => (
                   <div
                     key={`standalone-${index}`}
@@ -291,7 +316,7 @@ const ImageUploadSection = ({
                     <button
                       onClick={() => removeStandaloneImage(index)}
                       className="image-preview-remove"
-                      disabled={isProcessingPdf}
+                      disabled={false}
                     >
                       ×
                     </button>

@@ -331,7 +331,6 @@ useEffect(() => {
 
 3. **Modifications**
    - `POST /api/modify/stream` - Stream modifications with images
-   - `POST /api/modify/assets/stream` - Stream modifications with assets
 
 4. **Deployment**
    - `POST /api/design/build-and-deploy` - Deploy to production

@@ -1,7 +1,6 @@
 // useProjectWorkflow.ts
 import { useCallback } from "react";
 import axios from "axios";
-import { uploadFilesToDatabase } from "../../../../utils/fileUpload"; // adjust path if needed
 import { useNavigate } from "react-router-dom";
 import type {
   DbUser,
@@ -74,35 +73,7 @@ export function useProjectWorkflow({
 
         const token = await getToken();
 
-        const pdfsToUpload = selectedPdfs;
-        const trueImagesToUpload = selectedImages.filter(
-          (f: any) => !f.originalPdfName
-        );
-
-        const filesToUpload = [...pdfsToUpload, ...trueImagesToUpload];
-
-        let uploadedPdfFiles: Array<{ name: string; type: string; url: string }> = [];
-
-        if (filesToUpload.length > 0 && token) {
-          try {
-            const uploadResult = await uploadFilesToDatabase(filesToUpload, projectId, token);
-            if (uploadResult.success && uploadResult.data) {
-              // Filter for PDF files only
-              uploadedPdfFiles = uploadResult.data.files.filter(file => file.type === 'pdf');
-            }
-          } catch (uploadError) {
-            // Continue even if upload fails
-          }
-        }
-
-        // Build enhanced prompt with PDF file information
-        let enhancedPrompt = userPrompt;
-        if (uploadedPdfFiles.length > 0) {
-          const pdfInfo = uploadedPdfFiles.map(pdf => `${pdf.name} - ${pdf.url}`).join('\n');
-          let resume_url = uploadedPdfFiles.map(pdf => `${pdf.url}`).toString();
-          // enhancedPrompt += `\n\n${pdfInfo}`;
-          enhancedPrompt += `\n\nIf site type = portfolio: place a primary 'Download Résumé' button in the hero + a footer link, both targeting the ${resume_url? resume_url: ""}, new tab + download attribute, accessible label, high-contrast styling, mobile-tap friendly. If link is absent or unreachable, omit. Use only given link; no other storage URLs.`;
-        }
+        // No DB uploads. Send raw user-attached files directly to analyze endpoint.
           
         const formData = new FormData();
         formData.append("prompt", userPrompt);
@@ -120,8 +91,12 @@ export function useProjectWorkflow({
           formData.append("projectName", currentProject.name);
         }
 
-        selectedImages.forEach((image) => {
-          formData.append("images", image);
+        // Send both raw images and PDFs directly
+        selectedImages.forEach((file) => {
+          formData.append("images", file);
+        });
+        selectedPdfs.forEach((file) => {
+          formData.append("images", file);
         });
         
         const analyzeResponse = await axios.post(

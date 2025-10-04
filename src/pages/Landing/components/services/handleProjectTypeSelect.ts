@@ -7,6 +7,7 @@ export interface ProjectCreateParams {
   supabaseConfig?: {
     supabaseUrl?: string;
     supabaseAnonKey?: string;
+    databaseUrl?: string;
   };
   token: string;
   baseUrl: string;
@@ -34,6 +35,7 @@ export async function createProject({
     messageCount: 0,
     supabaseurl: supabaseConfig?.supabaseUrl || "",
     aneonkey: supabaseConfig?.supabaseAnonKey || "",
+    databaseUrl: supabaseConfig?.databaseUrl || "",
   };
 
   const response = await axios.post(`${baseUrl}/api/projects`, projectPayload, {
