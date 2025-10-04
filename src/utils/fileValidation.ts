@@ -13,7 +13,7 @@ export async function validateFile(file: File): Promise<boolean | string> {
   }
 
   // Check file extension
-  const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.ico', '.pdf'];
+  const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.ico', '.pdf', '.xlsx', '.md', '.csv'];
   const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
   
   if (!allowedExtensions.includes(fileExtension)) {
@@ -29,7 +29,7 @@ export async function validateFile(file: File): Promise<boolean | string> {
 }
 
 /**
- * Validates PDF file for page count (≤ 3 pages)
+ * Validates PDF file for page count (≤ 5 pages)
  * @param file - The PDF file to validate
  * @returns true if valid, error message string if invalid
  */
@@ -44,8 +44,8 @@ async function validatePdfFile(file: File): Promise<boolean | string> {
     const pdfText = new TextDecoder('latin1').decode(uint8Array);
     const pageCount = (pdfText.match(/%%EOF/g) || []).length;
     
-    if (pageCount > 3) {
-      return "🐾 Arf! Too many pages — our pup can only fetch up to 3 pages per PDF.";
+    if (pageCount > 5) {
+      return "🐾 Arf! Too many pages — our pup can only fetch up to 5 pages per PDF.";
     }
     
     return true;

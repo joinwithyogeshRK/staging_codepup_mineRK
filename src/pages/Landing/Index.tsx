@@ -63,7 +63,8 @@ import {
   Images,
   CreditCard,
 } from "lucide-react";
-import SupabaseConfigForm from "../form"; // Import the form component
+// import SupabaseConfigForm from "../form"; // replaced by dialog
+import SupabaseConnection from "@/components/Supabase/SupabaseConnection";
 import ImageUploadSection from "@/components/Image-upload-component";
 import { normalizeDisplayStep } from "./components/utils/displayStepUtils";
 import { computeProjectStats } from "./components/utils/projectStatsUtils";
@@ -133,7 +134,11 @@ FeedbackInput.displayName = "FeedbackInput";
 
 // --- Main Component ---
 const Index = () => {
-  const { isOpen: isPrizeModalOpen, openModal: openPrizeModal, closeModal: closePrizeModal } = usePrizeModal();
+  const {
+    isOpen: isPrizeModalOpen,
+    openModal: openPrizeModal,
+    closeModal: closePrizeModal,
+  } = usePrizeModal();
   const [prompt, setPrompt] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -451,7 +456,7 @@ const Index = () => {
 
       setSelectedProjectType(projectType);
 
-      if (projectType === "fullstack" && (!supabaseConfig || !isConfigValid)) {
+      if (projectType === "fullstack") {
         setShowSupabaseConfig(true);
         return;
       }
@@ -880,6 +885,26 @@ const Index = () => {
           </SignedIn>
         </motion.header>
 
+        {/* Announcement Banner */}
+        <motion.div
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="w-full flex justify-center pt-20 pb-2 px-4"
+        >
+          <div className="relative inline-flex items-center gap-2.5 px-5 py-2.5 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 border border-blue-200/50 rounded-full backdrop-blur-sm shadow-sm">
+            {/* Shining border effect on bottom */}
+            <div className="absolute bottom-0  left-1/4 right-1/4 h-[2px] bg-gradient-to-r from-transparent via-blue-500 to-transparent animate-pulse"></div>
+
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-500 rounded-full text-xs font-bold text-white shadow-sm">
+              NEW
+            </span>
+            <span className="text-sm font-semibold text-slate-800 tracking-tight">
+              Now the default model for the code generation is Claude Sonnet 4.5
+            </span>
+          </div>
+        </motion.div>
+
         {/* Backend Status Indicator */}
         {backendStatus !== "checking" && (
           <motion.div
@@ -1157,12 +1182,52 @@ const Index = () => {
         </div>
       </motion.div>
 
-      {/* Supabase Configuration Form Modal */}
-      <SupabaseConfigForm
-        isOpen={showSupabaseConfig}
-        onClose={() => setShowSupabaseConfig(false)}
-        onSubmit={handleSupabaseConfigSubmit}
-        initialConfig={supabaseConfig || {}}
+      {/* Supabase Connection Dialog */}
+      <SupabaseConnection
+        open={showSupabaseConfig}
+        onOpenChange={setShowSupabaseConfig}
+        onSelect={async (payloadString: string) => {
+          try {
+            const token = await getToken();
+            if (!token || !dbUser) return;
+            // Parse payload for supabase creds
+            let supaUrl = "";
+            let anonKey = "";
+            let dbUrl = "";
+            try {
+              const parsed = JSON.parse(payloadString);
+              const project = parsed?.supabaseProject;
+              if (project) {
+                supaUrl =
+                  project?.url || project?.credentials?.supabaseUrl || "";
+                anonKey =
+                  project?.anonKey ||
+                  project?.credentials?.supabaseAnonKey ||
+                  "";
+                dbUrl =
+                  project?.databaseUrl ||
+                  project?.credentials?.databaseUrl ||
+                  "";
+              }
+            } catch {}
+
+            const newProject = await createProject({
+              userId: dbUser.id,
+              projectType: "fullstack",
+              supabaseConfig: {
+                supabaseUrl: supaUrl,
+                supabaseAnonKey: anonKey,
+                databaseUrl: dbUrl,
+              },
+              token,
+              baseUrl: BASE_URL,
+            });
+            setProjects((prev) => [newProject, ...prev]);
+            setCurrentProjectId(newProject.id);
+            setShowProjectTypeSelector(false);
+            setPrompt("");
+          } catch (e) {}
+        }}
       />
 
       {/* Reward Modal Queue */}

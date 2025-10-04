@@ -110,32 +110,24 @@ const ProjectTypeSelector: React.FC<ProjectTypeSelectorProps> = ({
             >
               <motion.button
                 onClick={() => handleTypeSelect(type.id)}
-                disabled={isLoading || type.id === "fullstack"} // disable fullstack
+                disabled={isLoading} // disable fullstack
                 className={`group project-type-card-button ${
                   type.id === "frontend"
                     ? "project-type-card-button-frontend"
-                    : "project-type-card-button-fullstack-disabled"
+                    : "project-type-card-button-fullstack"
                 } ${isSelected ? "project-type-card-button-selected" : ""} ${
                   isLoading
                     ? "project-type-card-button-loading"
                     : `project-type-card-button-interactive ${
                         type.id === "frontend"
                           ? "project-type-card-button-frontend-interactive"
-                          : "project-type-card-button-fullstack-interactive-disabled"
+                          : "project-type-card-button-fullstack-interactive"
                       }`
                 } ${
-                  type.id === "fullstack" ? "project-type-card-disabled" : ""
+                  type.id === "fullstack" ? "project-type-card" : ""
                 }`} // custom class for coming soon
                 whileTap={!isLoading ? { scale: 0.98 } : {}}
               >
-                {/* Coming Soon Ribbon */}
-                {type.id === "fullstack" && (
-                  <div className="coming-soon-wrapper">
-                    <div className="coming-soon-ribbon">
-                      <span className="coming-soon-text">Coming Soon</span>
-                    </div>
-                  </div>
-                )}
 
                 {/* Subtle hover gradient */}
                 <div className="project-type-card-hover-gradient group-hover:opacity-100" />
@@ -168,14 +160,14 @@ const ProjectTypeSelector: React.FC<ProjectTypeSelectorProps> = ({
                       className={`project-type-card-icon-container ${
                         type.id === "frontend"
                           ? "project-type-card-icon-container-frontend"
-                          : "project-type-card-icon-container-fullstack-disabled"
+                          : "project-type-card-icon-container-fullstack"
                       }`}
                     >
                       <Icon
                         className={`project-type-card-icon ${
                           type.id === "frontend"
                             ? "project-type-card-icon-frontend"
-                            : "project-type-card-icon-fullstack-disabled"
+                            : "project-type-card-icon-fullstack"
                         }`}
                       />
                     </div>
@@ -184,7 +176,7 @@ const ProjectTypeSelector: React.FC<ProjectTypeSelectorProps> = ({
                         className={`project-type-card-arrow group-hover:opacity-100 group-hover:translate-x-1 ${
                           type.id === "frontend"
                             ? "project-type-card-arrow-frontend"
-                            : "project-type-card-arrow-fullstack-disabled"
+                            : "project-type-card-arrow-fullstack"
                         }`}
                       />
                     )}
@@ -192,7 +184,7 @@ const ProjectTypeSelector: React.FC<ProjectTypeSelectorProps> = ({
 
                   {/* Supabase Account Requirement Tag */}
                   {type.id === "fullstack" && (
-                    <div className="project-type-card-supabase-tag project-type-card-supabase-tag-fullstack-disabled">
+                    <div className="project-type-card-supabase-tag project-type-card-supabase-tag-fullstack">
                       <Database className="w-3 h-3 mr-1" />
                       Requires Supabase Account
                     </div>
@@ -202,7 +194,7 @@ const ProjectTypeSelector: React.FC<ProjectTypeSelectorProps> = ({
                     className={`project-type-card-title ${
                       type.id === "frontend"
                         ? "project-type-card-title-frontend"
-                        : "project-type-card-title-fullstack-disabled"
+                        : "project-type-card-title-fullstack"
                     }`}
                   >
                     {type.title}
@@ -217,7 +209,7 @@ const ProjectTypeSelector: React.FC<ProjectTypeSelectorProps> = ({
                       className={`project-type-card-features-title ${
                         type.id === "frontend"
                           ? "project-type-card-features-title-frontend"
-                          : "project-type-card-features-title-fullstack-disabled"
+                          : "project-type-card-features-title-fullstack"
                       }`}
                     >
                       Examples:
@@ -229,14 +221,14 @@ const ProjectTypeSelector: React.FC<ProjectTypeSelectorProps> = ({
                           className={`project-type-card-feature-item ${
                             type.id === "frontend"
                               ? "project-type-card-feature-item-frontend"
-                              : "project-type-card-feature-item-fullstack-disabled"
+                              : "project-type-card-feature-item-fullstack"
                           }`}
                         >
                           <div
                             className={`project-type-card-feature-dot ${
                               type.id === "frontend"
                                 ? "project-type-card-feature-dot-frontend"
-                                : "project-type-card-feature-dot-fullstack-disabled"
+                                : "project-type-card-feature-dot-fullstack"
                             }`}
                           />
                           {feature}
