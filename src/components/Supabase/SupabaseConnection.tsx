@@ -97,8 +97,16 @@ function SupabaseConnection({ open, onOpenChange, onSelect }: SupabaseConnection
       onOpenChange(false);
     } catch (err) {
       console.error("Error:", err);
-      //@ts-ignore
-      setError(err?.message || "Failed to connect to server");
+      try {
+        // Try to parse error as JSON to extract message
+        const errorText = (err as any)?.message || (err as any)?.toString() || "";
+        const errorData = JSON.parse(errorText);
+        setError(errorData.message || "Failed to connect to server");
+      } catch {
+        // If not JSON, use the original error message
+        //@ts-ignore
+        setError(err?.message || "Failed to connect to server");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -132,8 +140,16 @@ function SupabaseConnection({ open, onOpenChange, onSelect }: SupabaseConnection
       setProjects((prev) => [newProj, ...prev]);
       setSelectedProjectId(newProj.id);
     } catch (e) {
-      // @ts-ignore
-      setError(e?.message || "Failed to create project");
+      try {
+        // Try to parse error as JSON to extract message
+        const errorText = (e as any)?.message || (e as any)?.toString() || "";
+        const errorData = JSON.parse(errorText);
+        setError(errorData.message || "Failed to create project");
+      } catch {
+        // If not JSON, use the original error message
+        // @ts-ignore
+        setError(e?.message || "Failed to create project");
+      }
     } finally {
       setCreating(false);
     }
