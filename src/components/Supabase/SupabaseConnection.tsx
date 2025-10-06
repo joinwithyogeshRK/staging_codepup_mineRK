@@ -57,7 +57,7 @@ function SupabaseConnection({ open, onOpenChange, onSelect }: SupabaseConnection
 
     try {
       if (!accessToken) throw new Error("Access token required");
-
+      localStorage.setItem("supabaseAccessToken", accessToken);
       // Hit backend to mint Supabase credentials and (optionally) project
       const res = await fetch(`${API_BASE_URL}/api/supabase/getCredentials`, {
         method: "POST",
@@ -95,6 +95,8 @@ function SupabaseConnection({ open, onOpenChange, onSelect }: SupabaseConnection
       });
       onSelect(payloadString);
       onOpenChange(false);
+      // Store full payload in localStorage
+      localStorage.setItem('supabaseConnection', payloadString);
     } catch (err) {
       console.error("Error:", err);
       try {
@@ -399,7 +401,7 @@ function SupabaseConnection({ open, onOpenChange, onSelect }: SupabaseConnection
         </DialogHeader>
 
         <div className="w-full">
-        {/* Header Section */}
+          {/* Header Section */}
           <div className="mb-4">
             <div className="mb-2 bg-emerald-50 border border-emerald-200 rounded-lg p-4">
               <div className="flex items-start gap-3">
@@ -415,125 +417,18 @@ function SupabaseConnection({ open, onOpenChange, onSelect }: SupabaseConnection
               </div>
             </div>
           </div>
-        
 
-        {/* Main Content Card */}
+
+          {/* Main Content Card */}
           <div className="rounded-xl overflow-hidden">
             <div className="pb-0">
-            {/* Help Banner */}
-            {/* Generate Token Button */}
-            <div className="mb-6">
-              <button
-                onClick={handleClick}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3.5 px-4 rounded-lg text-base transition-all flex items-center justify-center gap-2 shadow-sm"
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+              {/* Help Banner */}
+              {/* Generate Token Button */}
+              <div className="mb-6">
+                <button
+                  onClick={handleClick}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3.5 px-4 rounded-lg text-base transition-all flex items-center justify-center gap-2 shadow-sm"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                  />
-                </svg>
-                Generate Token on Supabase
-              </button>
-            </div>
-
-            {/* Divider */}
-            <div className="relative mb-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-white text-gray-500">
-                  Then paste your token below
-                </span>
-              </div>
-            </div>
-
-            {/* Access Token Input */}
-            <div className="mb-6">
-              <label
-                htmlFor="accessToken"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Access Token
-              </label>
-              <input
-                id="accessToken"
-                type="password"
-                value={accessToken}
-                onChange={(e) => setAccessToken(e.target.value)}
-                placeholder="sbp_••••••••••••••••••••"
-                className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
-              />
-            </div>
-
-            {/* Error Display */}
-            {error && (
-              <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-                <div className="flex items-start gap-2">
-                  <svg className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <div className="flex-1">
-                    <p className="text-red-700 text-sm font-medium">{error}</p>
-                    {showProjectLimitError && (
-                      <button
-                        onClick={openSupabaseDashboard}
-                        className="mt-2 text-sm text-red-700 hover:text-red-800 underline transition-colors"
-                      >
-                        Manage your projects
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Success Display */}
-            {success && (
-              <div className="mb-6 bg-emerald-50 border border-emerald-200 rounded-lg p-4 text-emerald-800 text-sm">
-                Connected. Organizations and projects loaded.
-              </div>
-            )}
-
-            {/* Connect Button */}
-            <button
-              onClick={submit}
-              disabled={isLoading || !accessToken}
-              className="w-full bg-gray-900 hover:bg-black text-white font-semibold py-3.5 px-4 rounded-lg text-base transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-gray-900 flex items-center justify-center gap-2 shadow-sm"
-            >
-              {isLoading ? (
-                <>
-                  <svg
-                    className="animate-spin h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  <span>Connecting to Supabase...</span>
-                </>
-              ) : (
-                <>
                   <svg
                     className="w-5 h-5"
                     fill="none"
@@ -544,117 +439,224 @@ function SupabaseConnection({ open, onOpenChange, onSelect }: SupabaseConnection
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M13 10V3L4 14h7v7l9-11h-7z"
+                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
                     />
                   </svg>
-                  Connect with Supabase
-                </>
+                  Generate Token on Supabase
+                </button>
+              </div>
+
+              {/* Divider */}
+              <div className="relative mb-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-200"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-4 bg-white text-gray-500">
+                    Then paste your token below
+                  </span>
+                </div>
+              </div>
+
+              {/* Access Token Input */}
+              <div className="mb-6">
+                <label
+                  htmlFor="accessToken"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Access Token
+                </label>
+                <input
+                  id="accessToken"
+                  type="password"
+                  value={accessToken}
+                  onChange={(e) => setAccessToken(e.target.value)}
+                  placeholder="sbp_••••••••••••••••••••"
+                  className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                />
+              </div>
+
+              {/* Error Display */}
+              {error && (
+                <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="flex items-start gap-2">
+                    <svg className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div className="flex-1">
+                      <p className="text-red-700 text-sm font-medium">{error}</p>
+                      {showProjectLimitError && (
+                        <button
+                          onClick={openSupabaseDashboard}
+                          className="mt-2 text-sm text-red-700 hover:text-red-800 underline transition-colors"
+                        >
+                          Manage your projects
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
               )}
-            </button>
 
-            <p className="text-center text-gray-500 text-xs mt-4">
-              Your access token will be securely stored and used only for
-              authentication
-            </p>
+              {/* Success Display */}
+              {success && (
+                <div className="mb-6 bg-emerald-50 border border-emerald-200 rounded-lg p-4 text-emerald-800 text-sm">
+                  Connected. Organizations and projects loaded.
+                </div>
+              )}
 
-            {/* Organization selector and create project */}
-            {organizations.length > 0 && (
-              <div className="mt-6">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Organization</label>
-                    <select
-                      value={selectedOrgId}
-                      onChange={(e) => setSelectedOrgId(e.target.value)}
-                      className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              {/* Connect Button */}
+              <button
+                onClick={submit}
+                disabled={isLoading || !accessToken}
+                className="w-full bg-gray-900 hover:bg-black text-white font-semibold py-3.5 px-4 rounded-lg text-base transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-gray-900 flex items-center justify-center gap-2 shadow-sm"
+              >
+                {isLoading ? (
+                  <>
+                    <svg
+                      className="animate-spin h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
                     >
-                      {organizations.map((o) => (
-                        <option key={o.id || o.organization_id} value={o.id || o.organization_id}>
-                          {o.name || o.slug || o.id}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">New Project Name</label>
-                    <input
-                      value={newProjectName}
-                      onChange={(e) => setNewProjectName(e.target.value)}
-                      className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                      placeholder="Codepup"
-                    />
-                    <p className="mt-1 text-xs text-gray-500">Password defaults to Codepup123 • Region ap-south-1</p>
-                  </div>
-                </div>
-                <button
-                  onClick={handleCreateProject}
-                  disabled={creating}
-                  className="mt-3 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-lg disabled:opacity-50"
-                >
-                  {creating ? "Creating project..." : "Create new project"}
-                </button>
-              </div>
-            )}
-
-            {projects.length > 0 && (
-              <div className="mt-6">
-                <div className="mb-2 text-sm font-medium text-gray-700">Select a project</div>
-                <div className="max-h-56 overflow-y-auto space-y-2">
-                  {projects.map((p) => (
-                    <label key={p.id} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="project"
-                        value={p.id}
-                        checked={selectedProjectId === p.id}
-                        onChange={() => setSelectedProjectId(p.id)}
-                        className="h-4 w-4"
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    <span>Connecting to Supabase...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 10V3L4 14h7v7l9-11h-7z"
                       />
-                      <div className="flex-1">
-                        <div className="text-sm text-gray-900 font-medium">{p.name}</div>
-                        <div className="text-xs text-gray-500">{p.id} • {p.region} • {p.status}</div>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-                <button
-                  onClick={handleContinue}
-                  disabled={!selectedProjectId}
-                  className="mt-4 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-lg disabled:opacity-50"
-                >
-                  Continue with selected project
-                </button>
-              </div>
-            )}
-          </div>
+                    </svg>
+                    Connect with Supabase
+                  </>
+                )}
+              </button>
 
-          {/* Footer */}
-          <div className="mt-6 flex items-center justify-center gap-6">
-            <a
-              href="https://supabase.com/docs"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-800 text-sm transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-              </svg>
-              View Documentation
-            </a>
-            <span className="text-gray-300">•</span>
-            <a
-              href="https://supabase.com/dashboard/projects"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-800 text-sm transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-              </svg>
-              My Projects
-            </a>
+              <p className="text-center text-gray-500 text-xs mt-4">
+                Your access token will be securely stored and used only for
+                authentication
+              </p>
+
+              {/* Organization selector and create project */}
+              {organizations.length > 0 && (
+                <div className="mt-6">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Organization</label>
+                      <select
+                        value={selectedOrgId}
+                        onChange={(e) => setSelectedOrgId(e.target.value)}
+                        className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                      >
+                        {organizations.map((o) => (
+                          <option key={o.id || o.organization_id} value={o.id || o.organization_id}>
+                            {o.name || o.slug || o.id}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">New Project Name</label>
+                      <input
+                        value={newProjectName}
+                        onChange={(e) => setNewProjectName(e.target.value)}
+                        className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                        placeholder="Codepup"
+                      />
+                      <p className="mt-1 text-xs text-gray-500">Password defaults to Codepup123 • Region ap-south-1</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleCreateProject}
+                    disabled={creating}
+                    className="mt-3 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-lg disabled:opacity-50"
+                  >
+                    {creating ? "Creating project..." : "Create new project"}
+                  </button>
+                </div>
+              )}
+
+              {projects.length > 0 && (
+                <div className="mt-6">
+                  <div className="mb-2 text-sm font-medium text-gray-700">Select a project</div>
+                  <div className="max-h-56 overflow-y-auto space-y-2">
+                    {projects.map((p) => (
+                      <label key={p.id} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="project"
+                          value={p.id}
+                          checked={selectedProjectId === p.id}
+                          onChange={() => setSelectedProjectId(p.id)}
+                          className="h-4 w-4"
+                        />
+                        <div className="flex-1">
+                          <div className="text-sm text-gray-900 font-medium">{p.name}</div>
+                          <div className="text-xs text-gray-500">{p.id} • {p.region} • {p.status}</div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                  <button
+                    onClick={handleContinue}
+                    disabled={!selectedProjectId}
+                    className="mt-4 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-lg disabled:opacity-50"
+                  >
+                    Continue with selected project
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="mt-6 flex items-center justify-center gap-6">
+              <a
+                href="https://supabase.com/docs"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-800 text-sm transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+                View Documentation
+              </a>
+              <span className="text-gray-300">•</span>
+              <a
+                href="https://supabase.com/dashboard/projects"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-800 text-sm transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+                My Projects
+              </a>
+            </div>
           </div>
-        </div>
         </div>
 
         <DialogFooter>
