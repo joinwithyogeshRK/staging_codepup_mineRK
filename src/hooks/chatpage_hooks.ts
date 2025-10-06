@@ -1777,12 +1777,6 @@ export const useChatPageLogic = (
               75
             );
 
-            addWorkflowStep({
-              step: "Frontend Generation",
-              message: "Starting frontend generation with live deployment...",
-              isComplete: false,
-            });
-
             await startStreamingFrontendGeneration(projId);
 
             // Note: Completion will be marked in handleStreamingData when "result" is received
@@ -1854,7 +1848,7 @@ export const useChatPageLogic = (
             setWorkflowProgress(40);
           }
 
-          // Step 3: Backend Generation (75% progress)
+          // Step 2: Backend Generation (75% progress)
           if (shouldRunBackendGeneration) {
             WorkflowStateManager.setCurrentStage(
               projId,
@@ -1911,74 +1905,8 @@ export const useChatPageLogic = (
           } else {
             setWorkflowProgress(80);
           }
-          // ✅ AWAIT NEW 4TH ENDPOINT: Post-backend hook (e.g., sync DB, validate schema, etc.
-          const token = await getToken();
 
-          // Ensure supabaseConfig is defined
-          if (
-            !supabaseConfig?.supabaseUrl ||
-            !supabaseConfig?.supabaseAnonKey
-          ) {
-            throw new Error("Missing Supabase configuration");
-          }
-
-          const supabaseAccessToken =
-            localStorage.getItem("supabaseAccessToken") || "";
-          console.log("Supabase Access Token:", supabaseAccessToken);
-          console.log("Supabase url:", supabaseConfig.supabaseUrl);
-          console.log("Supabase anon:", supabaseConfig.supabaseAnonKey);
-          console.log("Supabase dburl:", supabaseConfig.databaseUrl);
-          console.log("Project ID:", projId);
-          console.log("Clerk ID:", clerkId);
-          console.log("User ID:", getCurrentUserId());
-          // Make the API call
-          const postBackendResponse = await axios.post(
-            `${baseUrl}/api/generate-fullstack/generate-frontend-with-flexible-backend`,
-            {
-              projectId: projId,
-              supabaseUrl: supabaseConfig.supabaseUrl,
-              supabaseAnonKey: supabaseConfig.supabaseAnonKey,
-              supabaseToken: supabaseAccessToken,
-              databaseUrl: supabaseConfig.databaseUrl || "",
-              userId: getCurrentUserId(),
-              clerkId,
-            },
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "application/json",
-              },
-            }
-          );
-
-          console.log(
-            "Frontend generation with backend config response:",
-            postBackendResponse.data
-          );
-
-          // Validate success
-          if (!postBackendResponse.data.success) {
-            throw new Error(
-              postBackendResponse.data.error || "Frontend generation failed"
-            );
-          }
-
-          // Update workflow
-          addWorkflowStep({
-            step: "Frontend Generation",
-            message: `✅ Generated frontend integrated with backend: ${
-              postBackendResponse.data.summary || ""
-            }`,
-            isComplete: true,
-            data: postBackendResponse.data,
-          });
-
-          WorkflowStateManager.markStageCompleted(
-            projId,
-            "Frontend Generation",
-            90
-          );
-
+          // Step 3: Frontend Generation with DB Sync (100% progress)
           if (shouldRunFrontendGeneration) {
             WorkflowStateManager.setCurrentStage(
               projId,
@@ -1994,6 +1922,49 @@ export const useChatPageLogic = (
               isComplete: false,
             });
 
+            // ✅ SYNC DATABASE BEFORE FRONTEND GENERATION
+            const token = await getToken();
+
+            // Ensure supabaseConfig is defined
+            if (
+              !supabaseConfig?.supabaseUrl ||
+              !supabaseConfig?.supabaseAnonKey
+            ) {
+              throw new Error("Missing Supabase configuration");
+            }
+
+            const supabaseAccessToken =
+              localStorage.getItem("supabaseAccessToken") || "";
+            console.log("Supabase Access Token:", supabaseAccessToken);
+            console.log("Supabase url:", supabaseConfig.supabaseUrl);
+            console.log("Supabase anon:", supabaseConfig.supabaseAnonKey);
+            console.log("Supabase dburl:", supabaseConfig.databaseUrl);
+            console.log("Project ID:", projId);
+            console.log("Clerk ID:", clerkId);
+            console.log("User ID:", getCurrentUserId());
+
+            // Make the API call to sync database and prepare frontend
+            const postBackendResponse = await axios.post(
+              `${baseUrl}/api/generate-fullstack/generate-frontend-with-flexible-backend`,
+              {
+                projectId: projId,
+                supabaseUrl: supabaseConfig.supabaseUrl,
+                supabaseAnonKey: supabaseConfig.supabaseAnonKey,
+                supabaseToken: supabaseAccessToken,
+                databaseUrl: supabaseConfig.databaseUrl || "",
+                userId: getCurrentUserId(),
+                clerkId,
+              },
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json",
+                },
+              }
+            );
+            console.log("Final Output:", postBackendResponse);
+
+            // Now start streaming frontend generation
             await startStreamingFrontendGeneration(projId);
 
             // Note: Completion will be marked in handleStreamingData when "result" is received
@@ -2051,6 +2022,9 @@ export const useChatPageLogic = (
       getWorkflowSteps,
       loadProject,
       fetchCredits,
+      clerkId,
+      getCurrentUserId,
+      getToken,
     ]
   );
 

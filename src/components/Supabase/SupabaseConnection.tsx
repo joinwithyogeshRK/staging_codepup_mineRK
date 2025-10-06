@@ -66,6 +66,7 @@ function SupabaseConnection({ open, onOpenChange, onSelect }: SupabaseConnection
         },
         body: JSON.stringify({ accessToken, projectName: "codePup", forceCreate: false }),
       });
+      console.log("Response status:", res);
       if (!res.ok) {
         const txt = await res.text();
         throw new Error(txt || "Failed to connect with Supabase");
