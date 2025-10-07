@@ -1,7 +1,6 @@
 import React from "react";
 import { motion } from "motion/react";
 import type { DesignChoices } from "../components/types/types"; // Adjust import path as needed
-import { extractColorsFromDesignChoices } from "../Index"; // Adjust path as needed
 import ColorPalette from "../components/ColorPalette"; // Adjust path based on where you put ColorPalette
 
 type DesignPreviewProps = {
@@ -9,12 +8,10 @@ type DesignPreviewProps = {
 };
 
 const DesignPreview: React.FC<DesignPreviewProps> = React.memo(({ designChoices }) => {
-  // Extract colors using the helper function
-  const extractedColors = extractColorsFromDesignChoices(designChoices);
-
-  const primaryColor = extractedColors.primary || "#3B82F6";
-  const secondaryColor = extractedColors.secondary || "#10B981";
-  const accentColor = extractedColors.accent || "#F59E0B";
+  // Extract colors using simple fallback
+  const primaryColor = designChoices.colorScheme?.primary || designChoices.recommendedColors?.[0] || "#3B82F6";
+  const secondaryColor = designChoices.colorScheme?.secondary || designChoices.recommendedColors?.[1] || "#10B981";
+  const accentColor = designChoices.colorScheme?.accent || designChoices.recommendedColors?.[2] || "#F59E0B";
 
   return (
     <motion.div
@@ -70,7 +67,7 @@ const DesignPreview: React.FC<DesignPreviewProps> = React.memo(({ designChoices 
             <span className="text-slate-500">Vibe:</span> {designChoices.vibe}
           </div>
         )}
-        <ColorPalette colors={extractedColors} />
+        {/* <ColorPalette colors={extractedColors} /> */}
         {(designChoices.features || designChoices.differentSections) && (
           <div className="text-xs text-slate-600">
             <span className="text-slate-500">Features:</span>{" "}

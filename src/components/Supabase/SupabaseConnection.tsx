@@ -236,22 +236,39 @@ function SupabaseConnection({
         </DialogHeader>
 
         <div className="space-y-6 py-2">
-          {/* Help Link */}
-          <button
-            onClick={() => setShowGuide(true)}
-            className="text-emerald-700 hover:text-emerald-800 text-sm font-medium underline"
-          >
-            How to get access token?
-          </button>
-
           {/* Token Input */}
           <div>
-            <label
-              htmlFor="accessToken"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Supabase Access Token
-            </label>
+            <div className="flex items-center gap-3 mb-2">
+              <label
+                htmlFor="accessToken"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Supabase Access Token
+              </label>
+
+              <button
+                onClick={() => setShowGuide(true)}
+                className="text-[13px] text-gray-500 hover:text-gray-700 underline underline-offset-2 flex items-center gap-1.5 transition-colors"
+              >
+                Guide
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  className="w-3.5 h-3.5"
+                >
+                  <circle cx="10" cy="10" r="9" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M8.8 8.2a2 2 0 113.2 1.7c-.7.5-1 .8-1 1.6v.2m-.1 2h.01"
+                  />
+                </svg>
+              </button>
+            </div>
+
             <input
               id="accessToken"
               type="password"
@@ -356,7 +373,7 @@ function SupabaseConnection({
           )}
         </div>
 
-        <DialogFooter className="mt-6 flex items-center justify-between">
+        <DialogFooter className=" flex items-center justify-between">
           <a
             href="https://supabase.com/docs"
             target="_blank"
