@@ -154,6 +154,7 @@ const Index = () => {
     if (stored) {
       try {
         const config = JSON.parse(stored);
+        console.log("Loaded Supabase config from localStorage:", config);
         setSupabaseConfig(config);
         setIsConfigValid(true);
       } catch (error) {}
@@ -350,7 +351,7 @@ const Index = () => {
     if (!dbUser) return;
 
     amplitude.track("Blue Generate button");
-
+    console.log(supabaseConfig, isConfigValid);
     if (
       selectedProjectType === "fullstack" &&
       (!supabaseConfig || !isConfigValid)
@@ -1159,6 +1160,13 @@ const Index = () => {
                   "";
               }
             } catch {}
+            console.log(supaUrl, anonKey, dbUrl);
+            setSupabaseConfig({
+              supabaseUrl: supaUrl,
+              supabaseAnonKey: anonKey,
+              databaseUrl: dbUrl,
+              supabaseToken: localStorage.getItem('supabaseAccessToken') || "" // Required field added
+            });
 
             const newProject = await createProject({
               userId: dbUser.id,
@@ -1172,6 +1180,7 @@ const Index = () => {
               baseUrl: BASE_URL,
             });
             setProjects((prev) => [newProject, ...prev]);
+            console.log(newProject)
             setCurrentProjectId(newProject.id);
             setShowProjectTypeSelector(false);
             setPrompt("");

@@ -6,11 +6,21 @@ export type ProjectInfo = {
   isVerified: boolean;
 };
 
+// types/index.ts or types/types.ts
+export interface SupabaseConfig {
+  supabaseUrl: string;
+  supabaseAnonKey: string;
+  databaseUrl?: string;
+  supabaseToken?: string;
+}
+
+
+
 export interface LocationState {
   prompt?: string;
   projectId?: number;
   existingProject?: boolean;
-  supabaseConfig?: any;
+  supabaseConfig?: SupabaseConfig;
   clerkId?: string;
   userId?: number;
   fromWorkflow?: boolean;
@@ -81,3 +91,4 @@ export interface GeneratedFile {
   type?: string;
   size?: number;
 }
+
