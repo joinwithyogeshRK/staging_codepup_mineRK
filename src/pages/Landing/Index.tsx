@@ -11,9 +11,11 @@ import { fetchUserCredits } from "./components/services/creditsService";
 import ProjectCard from "./components/ProjectCard";
 import ColorPalette from "./components/ColorPalette";
 import DesignPreview from "./components/DesignPreview";
+import FeedbackInput from "./components/FeedbackInput";
 import { loadMoreProjects } from "./components/services/handleLoadMoreProjects";
 import { confirmAndDeleteProject } from "./components/services/DeleteProject";
 import { createProject } from "./components/services/handleProjectTypeSelect";
+import handleFeedbackSubmit from "./components/services/feedbackService";
 import { submitWorkflowAction } from "./components/services/handleSubmitService";
 import axios from "axios";
 import {
@@ -29,6 +31,7 @@ import Credit from "../../components/Credit";
 import { processSelectedImages } from "./components/services/imageSelectionService";
 import RewardModal from "../../components/RewardModal";
 import ProjectTypeSelector from "../../components/options";
+import ExpandableDesignPreview from "../design-preview";
 import { syncUserAndFetchProjectsFn } from "./components/services/syncUserAndFetchProjects";
 import { motion, AnimatePresence } from "motion/react";
 import { useNavigate, Link } from "react-router-dom";
@@ -75,6 +78,8 @@ import type {
   SessionInfo,
   SupabaseConfig,
   Toast,
+  DesignChoices,
+  WorkflowMessage,
 } from "./components/types/types";
 import { useEvaluateRewards } from "./components/hooks/useEvaluateRewards";
 import AnimatedTitle from "./components/AnimatedTitle";
@@ -84,11 +89,48 @@ import PrizeModel, { usePrizeModal } from "@/components/PrizeModel";
 // --- Constants ---
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
+// Helper function to extract colors from design choices
+export const extractColorsFromDesignChoices = (
+  designChoices: DesignChoices
+) => {
+  // Try to get colors from different possible sources
+  const colors = {
+    primary: designChoices.colorScheme?.primary,
+    secondary: designChoices.colorScheme?.secondary,
+    accent: designChoices.colorScheme?.accent,
+    background: designChoices.colorScheme?.background,
+    text: designChoices.colorScheme?.text,
+  };
+
+  // If colorScheme is empty, try to use recommendedColors
+  if (
+    designChoices.recommendedColors &&
+    designChoices.recommendedColors.length > 0
+  ) {
+    colors.primary = colors.primary || designChoices.recommendedColors[0];
+    colors.secondary = colors.secondary || designChoices.recommendedColors[1];
+    colors.accent = colors.accent || designChoices.recommendedColors[2];
+  }
+
+  // If still no colors, try allColorOptions
+  if (
+    !colors.primary &&
+    designChoices.allColorOptions &&
+    designChoices.allColorOptions.length > 0
+  ) {
+    colors.primary = designChoices.allColorOptions[0];
+    colors.secondary = designChoices.allColorOptions[1];
+    colors.accent = designChoices.allColorOptions[2];
+  }
+
+  return colors;
+};
 
 // --- Memoized Components ---
 ColorPalette.displayName = "ColorPalette";
 DesignPreview.displayName = "DesignPreview";
 ProjectCard.displayName = "ProjectCard";
+FeedbackInput.displayName = "FeedbackInput";
 
 // --- Main Component ---
 const Index = () => {
@@ -129,12 +171,24 @@ const Index = () => {
 
   // Workflow states
   const [workflowActive, setWorkflowActive] = useState<boolean>(false);
+  const [workflowMessages, setWorkflowMessages] = useState<WorkflowMessage[]>(
+    []
+  );
   const [isProcessingPdf, setIsProcessingPdf] = useState(false);
+  const [currentStep, setCurrentStep] = useState<string>("analyze");
+  const [designChoices, setDesignChoices] = useState<DesignChoices | null>(
+    null
+  );
+  const [readyToGenerate, setReadyToGenerate] = useState<boolean>(false);
+  const [isProcessingFeedback, setIsProcessingFeedback] =
+    useState<boolean>(false);
   const [currentProjectId, setCurrentProjectId] = useState<number | null>(null);
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   // Keep original PDFs separate so we can upload PDFs (not derived images)
   const [selectedPdfs, setSelectedPdfs] = useState<File[]>([]);
   const [showDesignPreview, setShowDesignPreview] = useState(false);
+  const [selectedDesignForPreview, setSelectedDesignForPreview] =
+    useState<DesignChoices | null>(null);
 
   const { showToast } = useToast();
   const navigate = useNavigate();
@@ -220,6 +274,7 @@ const Index = () => {
     [showToast]
   );
 
+  // Reset workflow
   // Auto-scroll to bottom for workflow/chat-like sections
   useEffect(() => {
     try {
@@ -229,6 +284,9 @@ const Index = () => {
       });
     } catch {}
   }, [
+    workflowMessages.length,
+    currentStep,
+    readyToGenerate,
     showDesignPreview,
   ]);
 
@@ -246,6 +304,10 @@ const Index = () => {
     selectedPdfs,
     getToken,
     setWorkflowActive,
+    setWorkflowMessages,
+    setDesignChoices,
+    setReadyToGenerate,
+    setCurrentStep,
     setIsLoading,
     amplitudeTrack: amplitude.track, // pass amplitude tracking function
     BASE_URL,
@@ -362,6 +424,9 @@ const Index = () => {
 
     if (currentProjectId && !workflowActive && prompt.trim()) {
       setWorkflowActive(true);
+      setWorkflowMessages([]);
+      setDesignChoices(null);
+      setReadyToGenerate(false);
       await startAnalyzeWorkflow(currentProjectId, prompt);
       // Clear files after starting workflow to prevent re-upload
       setSelectedImages([]);
@@ -629,6 +694,7 @@ const Index = () => {
       projectSessions,
       { handleProjectClick, handleDeleteProject, handleContinueChat },
       hasSessionSupport,
+      setSelectedDesignForPreview,
       setShowDesignPreview
     );
   }, [
@@ -638,6 +704,7 @@ const Index = () => {
     handleDeleteProject,
     handleContinueChat,
     hasSessionSupport,
+    setSelectedDesignForPreview,
     setShowDesignPreview,
   ]);
 
@@ -664,6 +731,11 @@ const Index = () => {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [prompt, handleSubmit, workflowActive, showProjectTypeSelector]);
 
+  // Normalize current step for display-only logic without changing state/logic
+  const displayStep = useMemo(
+    () => normalizeDisplayStep(currentStep, readyToGenerate),
+    [currentStep, readyToGenerate]
+  );
 
   return (
     <>
@@ -867,7 +939,14 @@ const Index = () => {
 
           {/* Content only visible when signed in */}
           <SignedIn>
-            {(
+            {workflowActive && !isLoading && !readyToGenerate ? (
+              // Show the analyze/feedback workflow
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="workflow-container mb-12"
+              ></motion.div>
+            ) : (
               // Show either project type selector OR normal prompt input
               <>
                 {/* Show Project Type Selector or Normal Prompt Input */}
@@ -942,6 +1021,7 @@ const Index = () => {
                           transition={{
                             duration: 1,
                             ease: "easeOut",
+                            delay: 1.5,
                           }}
                           whileHover={{
                             scale: isConfigValid && prompt.trim() ? 1.05 : 1,
@@ -1006,35 +1086,6 @@ const Index = () => {
                             )}
                           </motion.span>
                         </motion.button>
-                        
-                        {/* Supabase Connected Indicator */}
-                        {selectedProjectType === "fullstack" && isConfigValid && (
-                          <motion.div
-                            initial={{ y: 30, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            transition={{
-                              duration: 1,
-                              ease: "easeOut",
-                              delay: 1.5
-                            }}
-                            className="flex items-center justify-center gap-2 mt-3 text-sm text-green-600"
-                          >
-                            <svg
-                              width="16"
-                              height="16"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="text-green-600"
-                            >
-                              <path
-                                d="M21.362 9.354H12V.396a.396.396 0 0 0-.716-.233L2.203 12.424l-.401.562a1.04 1.04 0 0 0 .836 1.659H12v8.959a.396.396 0 0 0 .716.233l9.081-12.261.401-.562a1.04 1.04 0 0 0-.836-1.66Z"
-                                fill="currentColor"
-                              />
-                            </svg>
-                            <span className="font-medium">Supabase connected</span>
-                          </motion.div>
-                        )}
                       </>
                     )}
                   </motion.div>
@@ -1199,6 +1250,19 @@ const Index = () => {
         />
       )}
 
+      {/* Expandable Design Preview Modal */}
+      <ExpandableDesignPreview
+        designChoices={selectedDesignForPreview || {}}
+        isOpen={showDesignPreview}
+        onClose={() => setShowDesignPreview(false)}
+        onGenerate={() => {
+          setShowDesignPreview(false);
+          generateApplication();
+        }}
+        projectName={
+          selectedDesignForPreview ? "Design Preview" : "Project Preview"
+        }
+      />
 
       {/* Pricing Modal */}
       <PrizeModel isOpen={isPrizeModalOpen} onClose={closePrizeModal} />
