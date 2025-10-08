@@ -23,10 +23,6 @@ interface UseProjectWorkflowParams {
   selectedPdfs: File[];
   getToken: () => Promise<string | null>;
   setWorkflowActive: (val: boolean) => void;
-  setWorkflowMessages: (val: WorkflowMessage[] | ((prev: WorkflowMessage[]) => WorkflowMessage[])) => void;
-  setDesignChoices: (val: DesignChoices | null) => void;
-  setReadyToGenerate: (val: boolean) => void;
-  setCurrentStep: (val: string) => void;
   setIsLoading: (val: boolean) => void;
   amplitudeTrack: (eventName: string) => void;
   BASE_URL: string;
@@ -45,10 +41,6 @@ export function useProjectWorkflow({
   selectedPdfs,
   getToken,
   setWorkflowActive,
-  setWorkflowMessages,
-  setDesignChoices,
-  setReadyToGenerate,
-  setCurrentStep,
   setIsLoading,
   amplitudeTrack,
   BASE_URL,
@@ -57,19 +49,9 @@ export function useProjectWorkflow({
   const startAnalyzeWorkflow = useCallback(
     async (projectId: number, userPrompt: string) => {
       setWorkflowActive(true);
-      setWorkflowMessages([]);
-      setDesignChoices(null);
-      setReadyToGenerate(true); // Set to true immediately to prevent UI from showing
       setIsLoading(true);
 
       try {
-        const userMessage: WorkflowMessage = {
-          id: `user-${Date.now()}`,
-          content: userPrompt,
-          type: "user",
-          timestamp: new Date(),
-        };
-        setWorkflowMessages([userMessage]);
 
         const token = await getToken();
 
@@ -113,13 +95,15 @@ export function useProjectWorkflow({
         if (analyzeResponse.data.success) {
           let processedDesignChoices = analyzeResponse.data.designChoices;
           if (processedDesignChoices && !processedDesignChoices.colorScheme) {
-            // You may want to import and use extractColorsFromDesignChoices here
-            // processedDesignChoices.colorScheme = extractColorsFromDesignChoices(processedDesignChoices);
+            // Simple color extraction fallback
+            processedDesignChoices.colorScheme = {
+              primary: processedDesignChoices.recommendedColors?.[0] || '#3B82F6',
+              secondary: processedDesignChoices.recommendedColors?.[1] || '#1E40AF',
+              accent: processedDesignChoices.recommendedColors?.[2] || '#F59E0B',
+              background: '#FFFFFF',
+              text: '#1F2937',
+            };
           }
-
-          // Set the design choices for the backend to reference
-          setDesignChoices(processedDesignChoices);
-          setReadyToGenerate(analyzeResponse.data.readyToGenerate || false);
 
           // Automatically navigate to chatpage after design analysis is complete
           // This replaces the manual green button click
@@ -128,16 +112,6 @@ export function useProjectWorkflow({
           // Check if it's fullstack and no backend config
           if (currentProject?.scope === "fullstack" && !supabaseConfig) {
             // If fullstack without config, we can't proceed - let the user handle this
-            const assistantMessage: WorkflowMessage = {
-              id: `assistant-${Date.now()}`,
-              content: analyzeResponse.data.message,
-              type: "assistant",
-              timestamp: new Date(),
-              step: analyzeResponse.data.step,
-              designChoices: processedDesignChoices,
-            };
-            setWorkflowMessages((prev) => [...prev, assistantMessage]);
-            setCurrentStep(analyzeResponse.data.step);
             return;
           }
 
@@ -157,14 +131,7 @@ export function useProjectWorkflow({
           });
         }
       } catch (error) {
-        const errorMessage: WorkflowMessage = {
-          id: `error-${Date.now()}`,
-          content:
-            "Ruff! 🐾 Something went wrong while sniffing through your request. Give it another try!",
-          type: "assistant",
-          timestamp: new Date(),
-        };
-        setWorkflowMessages((prev) => [...prev, errorMessage]);
+        console.error("Error in startAnalyzeWorkflow:", error);
       } finally {
         setIsLoading(false);
       }
@@ -178,10 +145,6 @@ export function useProjectWorkflow({
       selectedPdfs,
       getToken,
       setWorkflowActive,
-      setWorkflowMessages,
-      setDesignChoices,
-      setReadyToGenerate,
-      setCurrentStep,
       setIsLoading,
       BASE_URL,
       navigate,
@@ -203,9 +166,6 @@ export function useProjectWorkflow({
 
     if (currentProjectId && !workflowActive && prompt.trim()) {
       setWorkflowActive(true);
-      setWorkflowMessages([]);
-      setDesignChoices(null);
-      setReadyToGenerate(false);
       await startAnalyzeWorkflow(currentProjectId, prompt);
       return;
     }
@@ -222,10 +182,7 @@ export function useProjectWorkflow({
     selectedProjectType,
     supabaseConfig,
     startAnalyzeWorkflow,
-    setDesignChoices,
-    setReadyToGenerate,
     setWorkflowActive,
-    setWorkflowMessages,
     workflowActive,
   ]);
 

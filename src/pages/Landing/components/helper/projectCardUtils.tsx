@@ -15,7 +15,6 @@ export function getSortedProjectCards(
   projectSessions: Record<number, any>,
   handlers: Handlers,
   hasSessionSupport: boolean,
-  setSelectedDesignForPreview: React.Dispatch<React.SetStateAction<any>>,
   setShowDesignPreview: React.Dispatch<React.SetStateAction<boolean>>
 ) {
   const sortedProjects = [...projects].sort((a, b) => {
@@ -61,10 +60,6 @@ export function getSortedProjectCards(
         onContinueChat={handlers.handleContinueChat}
         sessionInfo={projectSessions[project.id]}
         hasSessionSupport={hasSessionSupport}
-        onPreviewDesign={(designChoices) => {
-          setSelectedDesignForPreview(designChoices);
-          setShowDesignPreview(true);
-        }}
       />
     </motion.div>
   ));
