@@ -108,15 +108,13 @@ export function useProjectWorkflow({
           // Automatically navigate to chatpage after design analysis is complete
           // This replaces the manual green button click
           const currentProject = projects.find((p) => p.id === projectId);
+          const projectScope = currentProject?.scope || selectedProjectType || "frontend";
           
-          // Check if it's fullstack and no backend config
-          if (currentProject?.scope === "fullstack" && !supabaseConfig) {
-            // If fullstack without config, we can't proceed - let the user handle this
-            return;
-          }
+          console.log("Navigating to chatPage with scope:", projectScope);
+          console.log("Current project:", currentProject);
+          console.log("Supabase config:", supabaseConfig);
 
           // Navigate directly to chatpage (equivalent to generateApplication)
-          
           const encodeIdParams = encodeId(projectId);
           navigate(`/chatPage/${encodeIdParams}`, {
             state: {
@@ -126,7 +124,7 @@ export function useProjectWorkflow({
               userId: dbUser!.id,
               supabaseConfig: supabaseConfig,
               fromWorkflow: true,
-              scope: currentProject?.scope || selectedProjectType || "frontend",
+              scope: projectScope,
             },
           });
         }
@@ -156,13 +154,13 @@ export function useProjectWorkflow({
 
     amplitudeTrack("Blue Generate button");
 
-    if (
-      selectedProjectType === "fullstack" &&
-      (!supabaseConfig || !isConfigValid)
-    ) {
-      // Show your project type selector or backend config modal externally
-      return;
-    }
+    // if (
+    //   selectedProjectType === "fullstack" &&
+    //   (!supabaseConfig || !isConfigValid)
+    // ) {
+    //   // Show your project type selector or backend config modal externally
+    //   return;
+    // }
 
     if (currentProjectId && !workflowActive && prompt.trim()) {
       setWorkflowActive(true);

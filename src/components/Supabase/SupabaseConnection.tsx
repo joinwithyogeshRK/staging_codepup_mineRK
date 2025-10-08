@@ -1,4 +1,6 @@
 import { useState } from "react";
+import axios from "axios";
+import { useAuth } from "@clerk/clerk-react";
 import {
   Dialog,
   DialogContent,
@@ -32,6 +34,9 @@ function SupabaseConnection({
   const [creating, setCreating] = useState(false);
   const [newProjectName, setNewProjectName] = useState<string>("Codepup");
   const API_BASE_URL = import.meta.env.VITE_BASE_URL;
+  
+  // Move useAuth hook to the top level
+  const { getToken } = useAuth();
 
   // const handleClick = () => {
   //   window.open(
@@ -57,12 +62,14 @@ function SupabaseConnection({
 
     try {
       if (!accessToken) throw new Error("Access token required");
+      const token = await getToken();
 
       // Hit backend to mint Supabase credentials and (optionally) project
       const res = await fetch(`${API_BASE_URL}/api/supabase/getCredentials`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
           accessToken,
@@ -70,10 +77,28 @@ function SupabaseConnection({
           forceCreate: false,
         }),
       });
+
       if (!res.ok) {
         const txt = await res.text();
         throw new Error(txt || "Failed to connect with Supabase");
       }
+      
+      // Save access token in user's schema
+      try {
+        const userData = { accessToken: accessToken };
+        const userResponse = await axios.post(
+          `${API_BASE_URL}/api/users`,
+          userData,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        console.log("Access token saved to user profile:", userResponse.data);
+      } catch (e) {
+        console.error("Failed to save access token to user profile:", e);
+        // Don't throw error here as this is not critical for the main flow
+      }
+
       localStorage.setItem("supabaseAccessToken", accessToken);
       const data = await res.json();
       if (!data?.success || !data?.supabaseProject) {
