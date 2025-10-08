@@ -1,6 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
-import { useAuth } from "@clerk/clerk-react";
+import { useAuth, useUser } from "@clerk/clerk-react";
 import {
   Dialog,
   DialogContent,
@@ -34,9 +34,10 @@ function SupabaseConnection({
   const [creating, setCreating] = useState(false);
   const [newProjectName, setNewProjectName] = useState<string>("Codepup");
   const API_BASE_URL = import.meta.env.VITE_BASE_URL;
-  
+
   // Move useAuth hook to the top level
   const { getToken } = useAuth();
+  const { user } = useUser();
 
   // const handleClick = () => {
   //   window.open(
@@ -82,10 +83,13 @@ function SupabaseConnection({
         const txt = await res.text();
         throw new Error(txt || "Failed to connect with Supabase");
       }
-      
+
       // Save access token in user's schema
       try {
-        const userData = { accessToken: accessToken };
+        const userData = {
+          supabaseToken: accessToken,
+          clerkId: user?.id,
+        } as any;
         const userResponse = await axios.post(
           `${API_BASE_URL}/api/users`,
           userData,
@@ -137,8 +141,6 @@ function SupabaseConnection({
       };
 
       localStorage.setItem("supabaseConfig", JSON.stringify(supabaseConfig));
-
-
     } catch (err) {
       console.error("Error:", err);
       try {
