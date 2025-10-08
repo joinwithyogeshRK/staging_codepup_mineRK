@@ -1482,7 +1482,8 @@ export const useChatPageLogic = (
           const hasAll = Boolean(
             effectiveSupabaseConfig?.supabaseUrl?.trim() &&
               effectiveSupabaseConfig?.supabaseAnonKey?.trim() &&
-              (effectiveSupabaseConfig?.databaseUrl?.trim() || "") !== undefined &&
+              (effectiveSupabaseConfig?.databaseUrl?.trim() || "") !==
+                undefined &&
               supabaseAccessToken?.trim()
           );
           if (!hasAll) {
@@ -1505,7 +1506,7 @@ export const useChatPageLogic = (
             supabaseUrl: effectiveSupabaseConfig.supabaseUrl,
             supabaseAnonKey: effectiveSupabaseConfig.supabaseAnonKey,
             supabaseToken: supabaseAccessToken,
-            databaseUrl: effectiveSupabaseConfig.databaseUrl,       
+            databaseUrl: effectiveSupabaseConfig.databaseUrl,
           });
         }
 
@@ -1873,32 +1874,80 @@ export const useChatPageLogic = (
             });
 
             const token = await getToken();
-            const backendResponse = await axios.post(
+            const backendResponse = await fetch(
               `${baseUrl}/api/generate-fullstack/generate-flexible-backend`,
               {
-                projectId: projId,
-              },
-              {
+                method: "POST",
                 headers: {
+                  "Content-Type": "application/json",
                   Authorization: `Bearer ${token}`,
                 },
+                body: JSON.stringify({ projectId: projId }),
               }
             );
-            console.log("Backend generation response:", backendResponse.data);
-            if (!backendResponse.data.success) {
-              throw new Error(
-                backendResponse.data.error || "Failed to generate backend"
-              );
+            if (!backendResponse.ok) {
+              throw new Error(`HTTP error! status: ${backendResponse.status}`);
             }
 
+            const reader = backendResponse.body?.getReader();
+            if (!reader) {
+              throw new Error("No response body");
+            }
+
+            const decoder = new TextDecoder();
+            let buffer = "";
+            let backendResult = null;
+
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split("\n");
+              buffer = lines.pop() || "";
+
+              for (const line of lines) {
+                if (line.startsWith("data: ")) {
+                  try {
+                    const data: StreamingProgressData = JSON.parse(
+                      line.slice(6)
+                    );
+
+                    // Process events directly
+                    if (data.type === "progress") {
+                      updateWorkflowStep("Backend Generation", {
+                        message: `${data.message} (${data.percentage || 0}%)`,
+                        isComplete: false,
+                      });
+                    } else if (data.type === "result") {
+                      backendResult = data.result;
+                      updateWorkflowStep("Backend Generation", {
+                        message: `✅ Generated backend with database schema and files!`,
+                        isComplete: true,
+                        data: data.result,
+                      });
+                      break; // Exit the loop when we get the result
+                    } else if (data.type === "error") {
+                      throw new Error(
+                        data.error || "Backend generation failed"
+                      );
+                    }
+                  } catch (e) {
+                    // Handle JSON parsing errors silently
+                  }
+                }
+              }
+            }
+
+            if (!backendResult) {
+              throw new Error("Backend generation did not complete successfully");
+            }
+
+            // ---------------------------------
             updateWorkflowStep("Backend Generation", {
-              message: `✅ Generated backend with database schema and ${
-                backendResponse.data.files
-                  ? Object.keys(backendResponse.data.files).length
-                  : 0
-              } files!`,
+              message: `✅ Generated backend with database schema and files!`,
               isComplete: true,
-              data: backendResponse.data,
+              // data: backendResponse.body,
             });
 
             WorkflowStateManager.markStageCompleted(
@@ -1928,10 +1977,6 @@ export const useChatPageLogic = (
               message: "Starting frontend generation with live deployment...",
               isComplete: false,
             });
-
-
-
-
 
             const supabaseAccessToken =
               localStorage.getItem("supabaseAccessToken") || "";
