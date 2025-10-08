@@ -33,21 +33,21 @@ function SupabaseConnection({
   const [newProjectName, setNewProjectName] = useState<string>("Codepup");
   const API_BASE_URL = import.meta.env.VITE_BASE_URL;
 
-  const handleClick = () => {
-    window.open(
-      "https://supabase.com/dashboard/account/tokens",
-      "_blank",
-      "noopener,noreferrer"
-    );
-  };
+  // const handleClick = () => {
+  //   window.open(
+  //     "https://supabase.com/dashboard/account/tokens",
+  //     "_blank",
+  //     "noopener,noreferrer"
+  //   );
+  // };
 
-  const openSupabaseDashboard = () => {
-    window.open(
-      "https://supabase.com/dashboard/projects",
-      "_blank",
-      "noopener,noreferrer"
-    );
-  };
+  // const openSupabaseDashboard = () => {
+  //   window.open(
+  //     "https://supabase.com/dashboard/projects",
+  //     "_blank",
+  //     "noopener,noreferrer"
+  //   );
+  // };
 
   const submit = async () => {
     setError(null);
@@ -74,6 +74,7 @@ function SupabaseConnection({
         const txt = await res.text();
         throw new Error(txt || "Failed to connect with Supabase");
       }
+      localStorage.setItem("supabaseAccessToken", accessToken);
       const data = await res.json();
       if (!data?.success || !data?.supabaseProject) {
         throw new Error("Invalid response from credentials API");
@@ -101,6 +102,18 @@ function SupabaseConnection({
       });
       onSelect(payloadString);
       onOpenChange(false);
+
+      // ✅ Properly store config as JSON
+      const supabaseConfig = {
+        supabaseUrl: data.supabaseProject.credentials.supabaseUrl,
+        supabaseAnonKey: data.supabaseProject.credentials.supabaseAnonKey,
+        supabaseToken: accessToken,
+        databaseUrl: data.supabaseProject.credentials.databaseUrl,
+      };
+
+      localStorage.setItem("supabaseConfig", JSON.stringify(supabaseConfig));
+
+
     } catch (err) {
       console.error("Error:", err);
       try {
@@ -116,49 +129,6 @@ function SupabaseConnection({
       }
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleCreateProject = async () => {
-    if (!accessToken) return setError("Access token required");
-    if (!selectedOrgId) return setError("Select an organization first");
-    setError(null);
-    setCreating(true);
-    try {
-      const res = await fetch(`https://api.supabase.com/v1/projects`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          db_pass: "Codepup123",
-          name: newProjectName || "Codepup",
-          organization_id: selectedOrgId,
-          region: "ap-south-1",
-        }),
-      });
-      if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(txt || "Failed to create project");
-      }
-      const created = await res.json();
-      const newProj = created?.project || created;
-      setProjects((prev) => [newProj, ...prev]);
-      setSelectedProjectId(newProj.id);
-    } catch (e) {
-      try {
-        // Try to parse error as JSON to extract message
-        const errorText = (e as any)?.message || (e as any)?.toString() || "";
-        const errorData = JSON.parse(errorText);
-        setError(errorData.message || "Failed to create project");
-      } catch {
-        // If not JSON, use the original error message
-        // @ts-ignore
-        setError(e?.message || "Failed to create project");
-      }
-    } finally {
-      setCreating(false);
     }
   };
 

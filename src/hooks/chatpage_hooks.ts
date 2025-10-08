@@ -350,11 +350,6 @@ export const useChatPageLogic = (
           description: "Creating design system",
         },
         {
-          name: "Structure Planning",
-          icon: "📋",
-          description: "Planning file structure",
-        },
-        {
           name: "Backend Generation",
           icon: "🔧",
           description: "Building server & database",
@@ -1465,13 +1460,36 @@ export const useChatPageLogic = (
         const apiRoute =
           projectScope === "frontend"
             ? "/api/design/generateFrontendOnly" // Frontend-only route
-            : "/api/design/generate-frontend"; // Fullstack route (main + admin)
+            : "/api/generate-fullstack/generate-frontend-with-flexible-backend"; // Fullstack route (main + admin)
 
-        // Only require supabaseConfig for fullstack projects
-        if (projectScope === "fullstack" && !supabaseConfig) {
-          throw new Error(
-            "Supabase configuration is missing for fullstack project"
+        // Only require supabaseConfig for fullstack projects and validate all fields
+        let effectiveSupabaseConfig = supabaseConfig as any;
+        if (!effectiveSupabaseConfig) {
+          try {
+            effectiveSupabaseConfig = JSON.parse(
+              localStorage.getItem("supabaseConfig") || "null"
+            );
+          } catch {}
+        }
+
+        const supabaseAccessToken =
+          effectiveSupabaseConfig?.supabaseToken ||
+          localStorage.getItem("supabaseAccessToken") ||
+          localStorage.getItem("supabaseToken") ||
+          "";
+
+        if (projectScope === "fullstack") {
+          const hasAll = Boolean(
+            effectiveSupabaseConfig?.supabaseUrl?.trim() &&
+              effectiveSupabaseConfig?.supabaseAnonKey?.trim() &&
+              (effectiveSupabaseConfig?.databaseUrl?.trim() || "") !== undefined &&
+              supabaseAccessToken?.trim()
           );
+          if (!hasAll) {
+            throw new Error(
+              "All Supabase configuration fields are required (supabaseUrl, supabaseAnonKey, supabaseToken, databaseUrl)"
+            );
+          }
         }
 
         // Prepare request body based on project scope
@@ -1482,12 +1500,14 @@ export const useChatPageLogic = (
         };
 
         // Only include supabaseConfig for fullstack projects
-        if (projectScope === "fullstack" && supabaseConfig) {
+        if (projectScope === "fullstack" && effectiveSupabaseConfig) {
           Object.assign(requestBody, {
-            supabaseUrl: supabaseConfig.supabaseUrl,
-            supabaseAnonKey: supabaseConfig.supabaseAnonKey,
-            supabaseToken: localStorage.getItem("supabaseToken") || "",
-            databaseUrl: supabaseConfig.databaseUrl,
+            supabaseUrl: effectiveSupabaseConfig.supabaseUrl,
+            supabaseAnonKey: effectiveSupabaseConfig.supabaseAnonKey,
+            supabaseToken: supabaseAccessToken,
+            databaseUrl: effectiveSupabaseConfig.databaseUrl,
+            userId: getCurrentUserId(),
+            clerkId,
           });
         }
 
@@ -1499,15 +1519,6 @@ export const useChatPageLogic = (
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify(requestBody),
-          // body: JSON.stringify({
-          //   projectId: projId,
-          //   supabaseUrl: supabaseConfig.supabaseUrl,
-          //   supabaseAnonKey: supabaseConfig.supabaseAnonKey,
-          //   supabaseToken: supabaseConfig.supabaseToken,
-          //   databaseUrl: supabaseConfig.databaseUrl,
-          //   userId: getCurrentUserId(),
-          //   clerkId: clerkId,
-          // }),
         });
 
         if (!response.ok) {
@@ -1695,8 +1706,6 @@ export const useChatPageLogic = (
         // **GUARD**: Define which stages should run
         const shouldRunDesignGeneration =
           !completedStages.includes("Design Generation");
-        const shouldRunStructurePlanning =
-          !completedStages.includes("Structure Planning");
         const shouldRunBackendGeneration =
           !completedStages.includes("Backend Generation");
         const shouldRunFrontendGeneration = !completedStages.includes(
@@ -1922,47 +1931,40 @@ export const useChatPageLogic = (
               isComplete: false,
             });
 
-            // ✅ SYNC DATABASE BEFORE FRONTEND GENERATION
-            const token = await getToken();
 
-            // Ensure supabaseConfig is defined
-            if (
-              !supabaseConfig?.supabaseUrl ||
-              !supabaseConfig?.supabaseAnonKey
-            ) {
-              throw new Error("Missing Supabase configuration");
-            }
+
+
 
             const supabaseAccessToken =
               localStorage.getItem("supabaseAccessToken") || "";
-            console.log("Supabase Access Token:", supabaseAccessToken);
-            console.log("Supabase url:", supabaseConfig.supabaseUrl);
-            console.log("Supabase anon:", supabaseConfig.supabaseAnonKey);
-            console.log("Supabase dburl:", supabaseConfig.databaseUrl);
-            console.log("Project ID:", projId);
-            console.log("Clerk ID:", clerkId);
-            console.log("User ID:", getCurrentUserId());
+            // console.log("Supabase Access Token:", supabaseAccessToken);
+            // console.log("Supabase url:", supabaseConfig.supabaseUrl);
+            // console.log("Supabase anon:", supabaseConfig.supabaseAnonKey);
+            // console.log("Supabase dburl:", supabaseConfig.databaseUrl);
+            // console.log("Project ID:", projId);
+            // console.log("Clerk ID:", clerkId);
+            // console.log("User ID:", getCurrentUserId());
 
             // Make the API call to sync database and prepare frontend
-            const postBackendResponse = await axios.post(
-              `${baseUrl}/api/generate-fullstack/generate-frontend-with-flexible-backend`,
-              {
-                projectId: projId,
-                supabaseUrl: supabaseConfig.supabaseUrl,
-                supabaseAnonKey: supabaseConfig.supabaseAnonKey,
-                supabaseToken: supabaseAccessToken,
-                databaseUrl: supabaseConfig.databaseUrl || "",
-                userId: getCurrentUserId(),
-                clerkId,
-              },
-              {
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                  "Content-Type": "application/json",
-                },
-              }
-            );
-            console.log("Final Output:", postBackendResponse);
+            // const postBackendResponse = await axios.post(
+            //   `${baseUrl}/api/generate-fullstack/generate-frontend-with-flexible-backend`,
+            //   {
+            //     projectId: projId,
+            //     supabaseUrl: supabaseConfig.supabaseUrl,
+            //     supabaseAnonKey: supabaseConfig.supabaseAnonKey,
+            //     supabaseToken: supabaseAccessToken,
+            //     databaseUrl: supabaseConfig.databaseUrl || "",
+            //     userId: getCurrentUserId(),
+            //     clerkId,
+            //   },
+            //   {
+            //     headers: {
+            //       Authorization: `Bearer ${token}`,
+            //       "Content-Type": "application/json",
+            //     },
+            //   }
+            // );
+            // console.log("Final Output:", postBackendResponse);
 
             // Now start streaming frontend generation
             await startStreamingFrontendGeneration(projId);
