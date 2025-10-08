@@ -1505,9 +1505,7 @@ export const useChatPageLogic = (
             supabaseUrl: effectiveSupabaseConfig.supabaseUrl,
             supabaseAnonKey: effectiveSupabaseConfig.supabaseAnonKey,
             supabaseToken: supabaseAccessToken,
-            databaseUrl: effectiveSupabaseConfig.databaseUrl,
-            userId: getCurrentUserId(),
-            clerkId,
+            databaseUrl: effectiveSupabaseConfig.databaseUrl,       
           });
         }
 
