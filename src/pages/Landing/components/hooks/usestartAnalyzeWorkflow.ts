@@ -53,7 +53,8 @@ export function useProjectWorkflow({
     async (projectId: number, userPrompt: string) => {
       setWorkflowActive(true);
       setIsLoading(true);
-
+      const supabaseDetails = localStorage.getItem("supabaseConfig");
+      const supabaseArgs = JSON.parse(supabaseDetails || "");
       try {
         const token = await getToken();
         const stored = localStorage.getItem("supabaseConfig");
@@ -61,7 +62,10 @@ export function useProjectWorkflow({
           try {
             const config = JSON.parse(stored);
             //@ts-ignore
-            setSupabaseConfig(config);
+            if(config) setSupabaseConfig(config);
+            console.log("Setting Supabase creds with this -> ", config)
+            console.log("What is set is here -->", supabaseConfig)
+            // else setSupabaseConfig()
           } catch (error) {}
         }
 
@@ -135,7 +139,7 @@ export function useProjectWorkflow({
           console.log("Navigating to chatPage with scope:", projectScope);
           console.log("Current project:", currentProject);
           console.log("Supabase config:", supabaseConfig);
-
+          console.log(localStorage.getItem("AccessToken"))
           // Navigate directly to chatpage (equivalent to generateApplication)
           const encodeIdParams = encodeId(projectId);
           navigate(`/chatPage/${encodeIdParams}`, {
@@ -144,7 +148,7 @@ export function useProjectWorkflow({
               existingProject: true,
               clerkId: dbUser!.clerkId,
               userId: dbUser!.id,
-              supabaseConfig: supabaseConfig,
+              supabaseConfig: supabaseArgs,
               fromWorkflow: true,
               scope: projectScope,
             },
