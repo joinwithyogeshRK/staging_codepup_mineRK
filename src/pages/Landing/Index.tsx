@@ -237,6 +237,7 @@ const Index = () => {
     projects,
     selectedProjectType,
     supabaseConfig,
+    setSupabaseConfig,
     isConfigValid,
     currentProjectId,
     workflowActive,
@@ -360,14 +361,16 @@ const Index = () => {
       prompt: prompt.trim()
     });
 
-    if (
-      selectedProjectType === "fullstack" &&
-      (!supabaseConfig || !isConfigValid)
-    ) {
-      console.log("Fullstack project without valid config, showing project selector");
-      setShowProjectTypeSelector(true);
-      return;
-    }
+    // if (
+    //   selectedProjectType === "fullstack" &&
+    //   (!supabaseConfig || !isConfigValid)
+    // ) {
+    //   console.log("Fullstack project without valid config, showing project selector");
+    //   setShowProjectTypeSelector(true);
+    //   return;
+    // }
+    console.log("Supabase COnfig -->", supabaseConfig);
+    console.log("Supabase isconfigvalid --->", isConfigValid);
 
     if (currentProjectId && !workflowActive && prompt.trim()) {
       console.log("Starting workflow for project:", currentProjectId);
@@ -1160,13 +1163,11 @@ const Index = () => {
               const project = parsed?.supabaseProject;
               if (project) {
                 supaUrl =
-                  project?.url || project?.credentials?.supabaseUrl || "";
+                  project?.credentials?.supabaseUrl || "";
                 anonKey =
-                  project?.anonKey ||
                   project?.credentials?.supabaseAnonKey ||
                   "";
                 dbUrl =
-                  project?.databaseUrl ||
                   project?.credentials?.databaseUrl ||
                   "";
               }

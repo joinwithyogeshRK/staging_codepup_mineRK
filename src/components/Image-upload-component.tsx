@@ -25,6 +25,7 @@ const ImageUploadSection = ({
   const [docFiles, setDocFiles] = useState<File[]>([]); // csv, md, xlsx
   const { showToast } = useToast();
 
+
   const handleFileSelect = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       const newFiles = Array.from(e.target.files || []);
@@ -61,9 +62,7 @@ const ImageUploadSection = ({
         return (
           lower.endsWith(".csv") ||
           lower.endsWith(".md") ||
-          lower.endsWith(".xlsx") ||
-          lower.endsWith(".xls") ||
-          lower.endsWith(".txt")
+          lower.endsWith(".xlsx")
         );
       });
 
@@ -72,27 +71,21 @@ const ImageUploadSection = ({
       let allImageFiles = [...imageFiles];
 
       // If any PDFs were selected, notify parent so originals can be uploaded as PDFs
-      if (pdfFiles.length > 0 && typeof setSelectedPdfs === "function") {
+      if (pdfFiles.length > 0 && typeof setSelectedPdfs === 'function') {
         setSelectedPdfs((prev: File[]) => {
           // Deduplicate by name+size to avoid duplicates on repeated selections
           const existingKeys = new Set(prev.map((f) => `${f.name}:${f.size}`));
-          const toAdd = pdfFiles.filter(
-            (f) => !existingKeys.has(`${f.name}:${f.size}`)
-          );
+          const toAdd = pdfFiles.filter((f) => !existingKeys.has(`${f.name}:${f.size}`));
           return [...prev, ...toAdd];
         });
       }
 
       // Keep PDFs as-is for backend; update PDF preview groups (no extraction)
       if (pdfFiles.length > 0) {
-        if (typeof setSelectedPdfs === "function") {
+        if (typeof setSelectedPdfs === 'function') {
           setSelectedPdfs((prev: File[]) => {
-            const existingKeys = new Set(
-              prev.map((f) => `${f.name}:${f.size}`)
-            );
-            const toAdd = pdfFiles.filter(
-              (f) => !existingKeys.has(`${f.name}:${f.size}`)
-            );
+            const existingKeys = new Set(prev.map((f) => `${f.name}:${f.size}`));
+            const toAdd = pdfFiles.filter((f) => !existingKeys.has(`${f.name}:${f.size}`));
             return [...prev, ...toAdd];
           });
         }
@@ -111,22 +104,16 @@ const ImageUploadSection = ({
 
       // Track other docs (xlsx, md, csv): push to selectedPdfs pathway and keep local list
       if (otherDocFiles.length > 0) {
-        if (typeof setSelectedPdfs === "function") {
+        if (typeof setSelectedPdfs === 'function') {
           setSelectedPdfs((prev: File[]) => {
-            const existingKeys = new Set(
-              prev.map((f) => `${f.name}:${f.size}`)
-            );
-            const toAdd = otherDocFiles.filter(
-              (f) => !existingKeys.has(`${f.name}:${f.size}`)
-            );
+            const existingKeys = new Set(prev.map((f) => `${f.name}:${f.size}`));
+            const toAdd = otherDocFiles.filter((f) => !existingKeys.has(`${f.name}:${f.size}`));
             return [...prev, ...toAdd];
           });
         }
         setDocFiles((prev) => {
           const existingKeys = new Set(prev.map((f) => `${f.name}:${f.size}`));
-          const toAdd = otherDocFiles.filter(
-            (f) => !existingKeys.has(`${f.name}:${f.size}`)
-          );
+          const toAdd = otherDocFiles.filter((f) => !existingKeys.has(`${f.name}:${f.size}`));
           return [...prev, ...toAdd];
         });
       }
@@ -149,10 +136,7 @@ const ImageUploadSection = ({
       }
 
       if (dedupedFiles.length < allImageFiles.length) {
-        showToast(
-          "Woof! 🐾 That file is already in the basket. No double treats allowed!",
-          "error"
-        );
+        showToast("Woof! 🐾 That file is already in the basket. No double treats allowed!", "error");
       }
 
       // Validate image files (and treat PDFs the same for size limits)
@@ -160,9 +144,7 @@ const ImageUploadSection = ({
       for (const file of dedupedFiles) {
         if ((file as File).size > 3.75 * 1024 * 1024) {
           showToast(
-            `Ruff! 🐶 "${
-              (file as File).name
-            }" is too big for our pup to carry. Max size is 3.75MB.`,
+            `Ruff! 🐶 "${(file as File).name}" is too big for our pup to carry. Max size is 3.75MB.`,
             "error"
           );
           continue;
@@ -229,14 +211,14 @@ const ImageUploadSection = ({
       return updated;
     });
     // Also remove the corresponding PDF from selectedPdfs
-    if (typeof setSelectedPdfs === "function") {
+    if (typeof setSelectedPdfs === 'function') {
       setSelectedPdfs((prev) => prev.filter((pdf) => pdf.name !== pdfName));
     }
   };
 
   const removeDocFile = (name: string) => {
     setDocFiles((prev) => prev.filter((f) => f.name !== name));
-    if (typeof setSelectedPdfs === "function") {
+    if (typeof setSelectedPdfs === 'function') {
       setSelectedPdfs((prev) => prev.filter((f) => f.name !== name));
     }
   };
@@ -257,7 +239,7 @@ const ImageUploadSection = ({
         <input
           type="file"
           multiple
-          accept="image/*,.pdf,.csv,.md,.xlsx,.xls,.txt"
+          accept="image/*,.pdf,.csv,.md,.xlsx"
           onChange={handleFileSelect}
           className="image-upload-input"
           id="image-upload"
@@ -272,33 +254,23 @@ const ImageUploadSection = ({
         >
           <div className="image-upload-content">
             <>
-              <Upload className="image-upload-icon" />
-
-              <div className="image-upload-hint">
-                <ul className="text-[14px]">
-                  <li>
-                    {" "}
-                    Attach your PDFs (like resume for portfolio) for your
-                    website
-                  </li>
-                  <li>
-                    {" "}
-                    You can also add brand shots, color swatches, or layout
-                    mocks so your site looks <em>paws-itively</em> customized.
-                  </li>
-                  {/* <li>Images | PDFs (up to 5 pages)</li> */}
-                  {/* <li>Max 5 files total, up to 3.75MB each.</li> */}
-                </ul>
-              </div>
+                <Upload className="image-upload-icon" />
+                
+                <div className="image-upload-hint">
+                  <ul className="text-[14px]">
+                    <li> Attach your PDFs (like resume for portfolio) for your website</li>
+                    <li> You can also add brand shots, color swatches, or layout mocks so your site looks <em>paws-itively</em> customized.</li>
+                    {/* <li>Images | PDFs (up to 5 pages)</li> */}
+                    {/* <li>Max 5 files total, up to 3.75MB each.</li> */}
+                  </ul>
+                </div>
             </>
           </div>
         </label>
       </div>
 
       {/* Selected files preview */}
-      {(Object.keys(pdfGroups).length > 0 ||
-        docFiles.length > 0 ||
-        selectedImages.length > 0) && (
+      {(Object.keys(pdfGroups).length > 0 || docFiles.length > 0 || selectedImages.length > 0) && (
         <div className="image-preview-container">
           {(() => {
             // Render PDF previews from tracked pdfGroups

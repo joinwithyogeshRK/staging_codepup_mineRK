@@ -1,15 +1,13 @@
 // useProjectWorkflow.ts
 import { useCallback } from "react";
 import axios from "axios";
-import { uploadFilesToDatabase } from "../../../../utils/fileUpload"; // adjust path if needed
 import { useNavigate } from "react-router-dom";
-import { extractImagesFromPdf } from "../../../../utils/pdfExtraction";
-import { useToast } from "@/helper/Toast";
 import type {
   DbUser,
   Project,
   WorkflowMessage,
   DesignChoices,
+  SupabaseConfig,
 } from "../types/types";
 import { encodeId } from "@/utils/hashids";
 
@@ -18,6 +16,7 @@ interface UseProjectWorkflowParams {
   projects: Project[];
   selectedProjectType: "frontend" | "fullstack" | null;
   supabaseConfig?: any;
+  setSupabaseConfig?: React.Dispatch<React.SetStateAction<SupabaseConfig | undefined>>;
   isConfigValid: boolean;
   currentProjectId: number | null;
   workflowActive: boolean;
@@ -26,12 +25,6 @@ interface UseProjectWorkflowParams {
   selectedPdfs: File[];
   getToken: () => Promise<string | null>;
   setWorkflowActive: (val: boolean) => void;
-  setWorkflowMessages: (
-    val: WorkflowMessage[] | ((prev: WorkflowMessage[]) => WorkflowMessage[])
-  ) => void;
-  setDesignChoices: (val: DesignChoices | null) => void;
-  setReadyToGenerate: (val: boolean) => void;
-  setCurrentStep: (val: string) => void;
   setIsLoading: (val: boolean) => void;
   amplitudeTrack: (eventName: string) => void;
   BASE_URL: string;
@@ -42,6 +35,7 @@ export function useProjectWorkflow({
   projects,
   selectedProjectType,
   supabaseConfig,
+  setSupabaseConfig,
   isConfigValid,
   currentProjectId,
   workflowActive,
@@ -50,36 +44,26 @@ export function useProjectWorkflow({
   selectedPdfs,
   getToken,
   setWorkflowActive,
-  setWorkflowMessages,
-  setDesignChoices,
-  setReadyToGenerate,
-  setCurrentStep,
   setIsLoading,
   amplitudeTrack,
   BASE_URL,
 }: UseProjectWorkflowParams) {
   const navigate = useNavigate();
-  const { showToast } = useToast();
   const startAnalyzeWorkflow = useCallback(
     async (projectId: number, userPrompt: string) => {
       setWorkflowActive(true);
-      setWorkflowMessages([]);
-      setDesignChoices(null);
-      setReadyToGenerate(true); // Set to true immediately to prevent UI from showing
       setIsLoading(true);
 
       try {
-        const userMessage: WorkflowMessage = {
-          id: `user-${Date.now()}`,
-          content: userPrompt,
-          type: "user",
-          timestamp: new Date(),
-        };
-        setWorkflowMessages([userMessage]);
-
         const token = await getToken();
-
-        // No DB uploads. Send raw user-attached files directly to analyze endpoint.
+        const stored = localStorage.getItem("supabaseConfig");
+        if (stored) {
+          try {
+            const config = JSON.parse(stored);
+            //@ts-ignore
+            setSupabaseConfig(config);
+          } catch (error) {}
+        }
 
         const formData = new FormData();
         formData.append("prompt", userPrompt);
@@ -97,46 +81,24 @@ export function useProjectWorkflow({
           formData.append("projectName", currentProject.name);
         }
 
-        // Prepare images to send: include raw images + images extracted from PDFs
-        const imagesToSend: File[] = [];
-        // Add existing image files
+        // Send both raw images and PDFs directly
         selectedImages.forEach((file) => {
-          if (file.type && file.type.startsWith("image/")) {
-            imagesToSend.push(file);
-          }
+          formData.append("images", file);
         });
-        // Extract images from PDFs only; skip other docs for analyze
-        for (const file of selectedPdfs) {
-          if (file.type === "application/pdf") {
-            const result = await extractImagesFromPdf(file, 5, showToast);
-            if (result && result.extractedImages.length > 0) {
-              imagesToSend.push(...result.extractedImages);
-            }
-          }
-        }
-        // Append all images to form data
-        imagesToSend.forEach((img) => formData.append("images", img));
-
-        // Append non-PDF documents (xlsx, xls, txt, md, csv) as originals
         selectedPdfs.forEach((file) => {
-          if (file.type !== "application/pdf") {
-            formData.append("documents", file);
-          }
+          formData.append("images", file);
         });
-        // ---------------- Debugging LOGS ------------------
-        /* for (let pair of formData.entries()) {
-          const [key, value] = pair;
-          
+        /// ------- DEBUGGING LOGS ------
+        for (const [key, value] of formData.entries()) {
           if (value instanceof File) {
             console.log(
-              `Key: ${key}, File name: ${value.name}, Type: ${value.type}, Size: ${value.size} bytes`
+              `${key}: [File] name=${value.name}, type=${value.type}, size=${value.size} bytes`
             );
           } else {
-            console.log(`Key: ${key}, Value: ${value}`);
+            console.log(`${key}:`, value);
           }
-        } */
-        // ---------------- ## ------------------
-
+        }
+        // ----------------------------------
         const analyzeResponse = await axios.post(
           `${BASE_URL}/api/design/analyze`,
           formData,
@@ -151,36 +113,30 @@ export function useProjectWorkflow({
         if (analyzeResponse.data.success) {
           let processedDesignChoices = analyzeResponse.data.designChoices;
           if (processedDesignChoices && !processedDesignChoices.colorScheme) {
-            // You may want to import and use extractColorsFromDesignChoices here
-            // processedDesignChoices.colorScheme = extractColorsFromDesignChoices(processedDesignChoices);
+            // Simple color extraction fallback
+            processedDesignChoices.colorScheme = {
+              primary:
+                processedDesignChoices.recommendedColors?.[0] || "#3B82F6",
+              secondary:
+                processedDesignChoices.recommendedColors?.[1] || "#1E40AF",
+              accent:
+                processedDesignChoices.recommendedColors?.[2] || "#F59E0B",
+              background: "#FFFFFF",
+              text: "#1F2937",
+            };
           }
-
-          // Set the design choices for the backend to reference
-          setDesignChoices(processedDesignChoices);
-          setReadyToGenerate(analyzeResponse.data.readyToGenerate || false);
 
           // Automatically navigate to chatpage after design analysis is complete
           // This replaces the manual green button click
           const currentProject = projects.find((p) => p.id === projectId);
+          const projectScope =
+            currentProject?.scope || selectedProjectType || "frontend";
 
-          // Check if it's fullstack and no backend config
-          if (currentProject?.scope === "fullstack" && !supabaseConfig) {
-            // If fullstack without config, we can't proceed - let the user handle this
-            const assistantMessage: WorkflowMessage = {
-              id: `assistant-${Date.now()}`,
-              content: analyzeResponse.data.message,
-              type: "assistant",
-              timestamp: new Date(),
-              step: analyzeResponse.data.step,
-              designChoices: processedDesignChoices,
-            };
-            setWorkflowMessages((prev) => [...prev, assistantMessage]);
-            setCurrentStep(analyzeResponse.data.step);
-            return;
-          }
+          console.log("Navigating to chatPage with scope:", projectScope);
+          console.log("Current project:", currentProject);
+          console.log("Supabase config:", supabaseConfig);
 
           // Navigate directly to chatpage (equivalent to generateApplication)
-
           const encodeIdParams = encodeId(projectId);
           navigate(`/chatPage/${encodeIdParams}`, {
             state: {
@@ -190,19 +146,12 @@ export function useProjectWorkflow({
               userId: dbUser!.id,
               supabaseConfig: supabaseConfig,
               fromWorkflow: true,
-              scope: currentProject?.scope || selectedProjectType || "frontend",
+              scope: projectScope,
             },
           });
         }
       } catch (error) {
-        const errorMessage: WorkflowMessage = {
-          id: `error-${Date.now()}`,
-          content:
-            "Ruff! 🐾 Something went wrong while sniffing through your request. Give it another try!",
-          type: "assistant",
-          timestamp: new Date(),
-        };
-        setWorkflowMessages((prev) => [...prev, errorMessage]);
+        console.error("Error in startAnalyzeWorkflow:", error);
       } finally {
         setIsLoading(false);
       }
@@ -216,10 +165,6 @@ export function useProjectWorkflow({
       selectedPdfs,
       getToken,
       setWorkflowActive,
-      setWorkflowMessages,
-      setDesignChoices,
-      setReadyToGenerate,
-      setCurrentStep,
       setIsLoading,
       BASE_URL,
       navigate,
@@ -231,19 +176,16 @@ export function useProjectWorkflow({
 
     amplitudeTrack("Blue Generate button");
 
-    if (
-      selectedProjectType === "fullstack" &&
-      (!supabaseConfig || !isConfigValid)
-    ) {
-      // Show your project type selector or backend config modal externally
-      return;
-    }
+    // if (
+    //   selectedProjectType === "fullstack" &&
+    //   (!supabaseConfig || !isConfigValid)
+    // ) {
+    //   // Show your project type selector or backend config modal externally
+    //   return;
+    // }
 
     if (currentProjectId && !workflowActive && prompt.trim()) {
       setWorkflowActive(true);
-      setWorkflowMessages([]);
-      setDesignChoices(null);
-      setReadyToGenerate(false);
       await startAnalyzeWorkflow(currentProjectId, prompt);
       return;
     }
@@ -260,10 +202,7 @@ export function useProjectWorkflow({
     selectedProjectType,
     supabaseConfig,
     startAnalyzeWorkflow,
-    setDesignChoices,
-    setReadyToGenerate,
     setWorkflowActive,
-    setWorkflowMessages,
     workflowActive,
   ]);
 

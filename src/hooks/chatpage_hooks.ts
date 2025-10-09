@@ -1464,14 +1464,29 @@ export const useChatPageLogic = (
 
         // Only require supabaseConfig for fullstack projects and validate all fields
         let effectiveSupabaseConfig = supabaseConfig as any;
-        if (!effectiveSupabaseConfig) {
+        effectiveSupabaseConfig.supabaseToken = localStorage.getItem("supabaseAccessToken");
+          if (!projectId || !clerkId) return;
           try {
-            effectiveSupabaseConfig = JSON.parse(
-              localStorage.getItem("supabaseConfig") || "null"
-            );
-          } catch {}
-        }
+            const token = await getToken();
+            const res = await fetch(`${baseUrl}/api/projects/${projId}`, {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              },
+            });
 
+            if (!res.ok) {
+              throw new Error(`Failed to fetch project data (${res.status})`);
+            }
+            const data: { aneonkey?: string; databaseUrl?: string, supabaseurl?:string } = await res.json();
+            effectiveSupabaseConfig.supabaseAnonKey = data.aneonkey;
+            effectiveSupabaseConfig.databaseUrl = data.databaseUrl;
+            effectiveSupabaseConfig.supabaseUrl = data.supabaseurl;
+          } catch (err) {
+            console.error("Unable to fetch project details", err)  
+          }
+        
         const supabaseAccessToken =
           effectiveSupabaseConfig?.supabaseToken ||
           localStorage.getItem("supabaseAccessToken") ||
@@ -1482,8 +1497,7 @@ export const useChatPageLogic = (
           const hasAll = Boolean(
             effectiveSupabaseConfig?.supabaseUrl?.trim() &&
               effectiveSupabaseConfig?.supabaseAnonKey?.trim() &&
-              (effectiveSupabaseConfig?.databaseUrl?.trim() || "") !==
-                undefined &&
+              (effectiveSupabaseConfig?.databaseUrl?.trim() || "") !== undefined &&
               supabaseAccessToken?.trim()
           );
           if (!hasAll) {
@@ -1506,11 +1520,14 @@ export const useChatPageLogic = (
             supabaseUrl: effectiveSupabaseConfig.supabaseUrl,
             supabaseAnonKey: effectiveSupabaseConfig.supabaseAnonKey,
             supabaseToken: supabaseAccessToken,
-            databaseUrl: effectiveSupabaseConfig.databaseUrl,
+            databaseUrl: effectiveSupabaseConfig.databaseUrl,       
           });
         }
 
         const token = await getToken();
+        //// ------ DEBUGGING ------
+        console.log("front-of-flexible-backend's BODY --->", requestBody);
+        //// ------------
         const response = await fetch(`${baseUrl}${apiRoute}`, {
           method: "POST",
           headers: {
@@ -1874,80 +1891,32 @@ export const useChatPageLogic = (
             });
 
             const token = await getToken();
-            const backendResponse = await fetch(
+            const backendResponse = await axios.post(
               `${baseUrl}/api/generate-fullstack/generate-flexible-backend`,
               {
-                method: "POST",
+                projectId: projId,
+              },
+              {
                 headers: {
-                  "Content-Type": "application/json",
                   Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({ projectId: projId }),
               }
             );
-            if (!backendResponse.ok) {
-              throw new Error(`HTTP error! status: ${backendResponse.status}`);
+            console.log("Backend generation response:", backendResponse.data);
+            if (!backendResponse.data.success) {
+              throw new Error(
+                backendResponse.data.error || "Failed to generate backend"
+              );
             }
 
-            const reader = backendResponse.body?.getReader();
-            if (!reader) {
-              throw new Error("No response body");
-            }
-
-            const decoder = new TextDecoder();
-            let buffer = "";
-            let backendResult = null;
-
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
-
-              buffer += decoder.decode(value, { stream: true });
-              const lines = buffer.split("\n");
-              buffer = lines.pop() || "";
-
-              for (const line of lines) {
-                if (line.startsWith("data: ")) {
-                  try {
-                    const data: StreamingProgressData = JSON.parse(
-                      line.slice(6)
-                    );
-
-                    // Process events directly
-                    if (data.type === "progress") {
-                      updateWorkflowStep("Backend Generation", {
-                        message: `${data.message} (${data.percentage || 0}%)`,
-                        isComplete: false,
-                      });
-                    } else if (data.type === "result") {
-                      backendResult = data.result;
-                      updateWorkflowStep("Backend Generation", {
-                        message: `✅ Generated backend with database schema and files!`,
-                        isComplete: true,
-                        data: data.result,
-                      });
-                      break; // Exit the loop when we get the result
-                    } else if (data.type === "error") {
-                      throw new Error(
-                        data.error || "Backend generation failed"
-                      );
-                    }
-                  } catch (e) {
-                    // Handle JSON parsing errors silently
-                  }
-                }
-              }
-            }
-
-            if (!backendResult) {
-              throw new Error("Backend generation did not complete successfully");
-            }
-
-            // ---------------------------------
             updateWorkflowStep("Backend Generation", {
-              message: `✅ Generated backend with database schema and files!`,
+              message: `✅ Generated backend with database schema and ${
+                backendResponse.data.files
+                  ? Object.keys(backendResponse.data.files).length
+                  : 0
+              } files!`,
               isComplete: true,
-              // data: backendResponse.body,
+              data: backendResponse.data,
             });
 
             WorkflowStateManager.markStageCompleted(
@@ -1977,6 +1946,10 @@ export const useChatPageLogic = (
               message: "Starting frontend generation with live deployment...",
               isComplete: false,
             });
+
+
+
+
 
             const supabaseAccessToken =
               localStorage.getItem("supabaseAccessToken") || "";
