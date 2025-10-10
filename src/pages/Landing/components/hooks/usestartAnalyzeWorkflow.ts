@@ -7,6 +7,7 @@ import type {
   Project,
   WorkflowMessage,
   DesignChoices,
+  SupabaseConfig,
 } from "../types/types";
 import { encodeId } from "@/utils/hashids";
 
@@ -15,6 +16,7 @@ interface UseProjectWorkflowParams {
   projects: Project[];
   selectedProjectType: "frontend" | "fullstack" | null;
   supabaseConfig?: any;
+  setSupabaseConfig?: React.Dispatch<React.SetStateAction<SupabaseConfig | undefined>>;
   isConfigValid: boolean;
   currentProjectId: number | null;
   workflowActive: boolean;
@@ -33,6 +35,7 @@ export function useProjectWorkflow({
   projects,
   selectedProjectType,
   supabaseConfig,
+  setSupabaseConfig,
   isConfigValid,
   currentProjectId,
   workflowActive,
@@ -50,13 +53,22 @@ export function useProjectWorkflow({
     async (projectId: number, userPrompt: string) => {
       setWorkflowActive(true);
       setIsLoading(true);
-
+      const supabaseDetails = localStorage.getItem("supabaseConfig");
+      const supabaseArgs = JSON.parse(supabaseDetails || "");
       try {
-
         const token = await getToken();
+        const stored = localStorage.getItem("supabaseConfig");
+        if (stored) {
+          try {
+            const config = JSON.parse(stored);
+            //@ts-ignore
+            if(config) setSupabaseConfig(config);
+            console.log("Setting Supabase creds with this -> ", config)
+            console.log("What is set is here -->", supabaseConfig)
+            // else setSupabaseConfig()
+          } catch (error) {}
+        }
 
-        // No DB uploads. Send raw user-attached files directly to analyze endpoint.
-          
         const formData = new FormData();
         formData.append("prompt", userPrompt);
         formData.append("userId", dbUser!.id.toString());
@@ -80,7 +92,17 @@ export function useProjectWorkflow({
         selectedPdfs.forEach((file) => {
           formData.append("images", file);
         });
-        
+        /// ------- DEBUGGING LOGS ------
+        for (const [key, value] of formData.entries()) {
+          if (value instanceof File) {
+            console.log(
+              `${key}: [File] name=${value.name}, type=${value.type}, size=${value.size} bytes`
+            );
+          } else {
+            console.log(`${key}:`, value);
+          }
+        }
+        // ----------------------------------
         const analyzeResponse = await axios.post(
           `${BASE_URL}/api/design/analyze`,
           formData,
@@ -97,23 +119,27 @@ export function useProjectWorkflow({
           if (processedDesignChoices && !processedDesignChoices.colorScheme) {
             // Simple color extraction fallback
             processedDesignChoices.colorScheme = {
-              primary: processedDesignChoices.recommendedColors?.[0] || '#3B82F6',
-              secondary: processedDesignChoices.recommendedColors?.[1] || '#1E40AF',
-              accent: processedDesignChoices.recommendedColors?.[2] || '#F59E0B',
-              background: '#FFFFFF',
-              text: '#1F2937',
+              primary:
+                processedDesignChoices.recommendedColors?.[0] || "#3B82F6",
+              secondary:
+                processedDesignChoices.recommendedColors?.[1] || "#1E40AF",
+              accent:
+                processedDesignChoices.recommendedColors?.[2] || "#F59E0B",
+              background: "#FFFFFF",
+              text: "#1F2937",
             };
           }
 
           // Automatically navigate to chatpage after design analysis is complete
           // This replaces the manual green button click
           const currentProject = projects.find((p) => p.id === projectId);
-          const projectScope = currentProject?.scope || selectedProjectType || "frontend";
-          
+          const projectScope =
+            currentProject?.scope || selectedProjectType || "frontend";
+
           console.log("Navigating to chatPage with scope:", projectScope);
           console.log("Current project:", currentProject);
           console.log("Supabase config:", supabaseConfig);
-
+          console.log(localStorage.getItem("AccessToken"))
           // Navigate directly to chatpage (equivalent to generateApplication)
           const encodeIdParams = encodeId(projectId);
           navigate(`/chatPage/${encodeIdParams}`, {
@@ -122,7 +148,7 @@ export function useProjectWorkflow({
               existingProject: true,
               clerkId: dbUser!.clerkId,
               userId: dbUser!.id,
-              supabaseConfig: supabaseConfig,
+              supabaseConfig: supabaseArgs,
               fromWorkflow: true,
               scope: projectScope,
             },

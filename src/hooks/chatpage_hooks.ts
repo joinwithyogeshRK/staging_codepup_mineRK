@@ -1464,14 +1464,29 @@ export const useChatPageLogic = (
 
         // Only require supabaseConfig for fullstack projects and validate all fields
         let effectiveSupabaseConfig = supabaseConfig as any;
-        if (!effectiveSupabaseConfig) {
+        effectiveSupabaseConfig.supabaseToken = localStorage.getItem("supabaseAccessToken");
+          if (!projectId || !clerkId) return;
           try {
-            effectiveSupabaseConfig = JSON.parse(
-              localStorage.getItem("supabaseConfig") || "null"
-            );
-          } catch {}
-        }
+            const token = await getToken();
+            const res = await fetch(`${baseUrl}/api/projects/${projId}`, {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              },
+            });
 
+            if (!res.ok) {
+              throw new Error(`Failed to fetch project data (${res.status})`);
+            }
+            const data: { aneonkey?: string; databaseUrl?: string, supabaseurl?:string } = await res.json();
+            effectiveSupabaseConfig.supabaseAnonKey = data.aneonkey;
+            effectiveSupabaseConfig.databaseUrl = data.databaseUrl;
+            effectiveSupabaseConfig.supabaseUrl = data.supabaseurl;
+          } catch (err) {
+            console.error("Unable to fetch project details", err)  
+          }
+        
         const supabaseAccessToken =
           effectiveSupabaseConfig?.supabaseToken ||
           localStorage.getItem("supabaseAccessToken") ||
@@ -1510,6 +1525,9 @@ export const useChatPageLogic = (
         }
 
         const token = await getToken();
+        //// ------ DEBUGGING ------
+        console.log("front-of-flexible-backend's BODY --->", requestBody);
+        //// ------------
         const response = await fetch(`${baseUrl}${apiRoute}`, {
           method: "POST",
           headers: {

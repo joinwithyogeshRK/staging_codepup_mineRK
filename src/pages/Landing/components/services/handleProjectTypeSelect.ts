@@ -37,7 +37,7 @@ export async function createProject({
     aneonkey: supabaseConfig?.supabaseAnonKey || "",
     databaseUrl: supabaseConfig?.databaseUrl || "",
   };
-
+  console.log("Creating Project with these credentials payload:", projectPayload)
   const response = await axios.post(`${baseUrl}/api/projects`, projectPayload, {
     headers: {
       Authorization: `Bearer ${token}`,
