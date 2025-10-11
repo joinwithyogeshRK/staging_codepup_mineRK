@@ -83,6 +83,11 @@ export function useProjectWorkflow({
           formData.append("projectName", currentProject.name);
         }
 
+        // Add Supabase config to formData if available
+        if (stored) {
+          formData.append("supabaseConfig", stored);
+        }
+
         // Send both raw images and PDFs directly
         selectedImages.forEach((file) => {
           formData.append("images", file);

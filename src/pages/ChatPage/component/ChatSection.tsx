@@ -64,7 +64,6 @@ interface ChatSectionProps {
   toggleUploadMenu: () => void;
   showDocsInput: boolean;
   setShowDocsInput: React.Dispatch<React.SetStateAction<boolean>>;
-  uploadFilesToDatabaseHelper: (files: File[]) => Promise<void>;
 
   // Status props
   isLoading: boolean;
@@ -131,7 +130,6 @@ const ChatSection: React.FC<ChatSectionProps> = ({
   toggleUploadMenu,
   showDocsInput,
   setShowDocsInput,
-  uploadFilesToDatabaseHelper,
   isLoading,
   projectStatus,
   isStreamingResponse,

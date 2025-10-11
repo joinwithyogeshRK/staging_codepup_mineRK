@@ -21,7 +21,6 @@ import axios from "axios";
 import { useAuth, UserButton } from "@clerk/clerk-react";
 import { useChatPageState, useChatPageLogic } from "../../hooks/chatpage_hooks";
 import { v4 as uuidv4 } from "uuid";
-import { uploadFilesToDatabase } from "../../utils/fileUpload";
 import type { ContextValue } from "../../types/index";
 import GitHubModel from "../../components/GithubModel";
 import Credit from "../../components/Credit";
@@ -347,22 +346,7 @@ const ChatPage: React.FC = () => {
     toggleUploadMenu,
   } = logic;
   // console.log(projectScope);
-  // Helper function to upload files to database
-  const uploadFilesToDatabaseHelper = useCallback(
-    async (files: File[]) => {
-      if (!files || files.length === 0 || !projectId) return;
-
-      try {
-        const token = await getToken();
-        if (token) {
-          await uploadFilesToDatabase(files, projectId, token);
-        }
-      } catch (error) {
-        // Don't show error to user as this is a background operation
-      }
-    },
-    [projectId, getToken]
-  );
+  // Removed file upload to database functionality
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -723,7 +707,6 @@ const ChatPage: React.FC = () => {
           toggleUploadMenu={toggleUploadMenu}
           showDocsInput={showDocsInput}
           setShowDocsInput={setShowDocsInput}
-          uploadFilesToDatabaseHelper={uploadFilesToDatabaseHelper}
           isLoading={isLoading}
           projectStatus={projectStatus}
           isStreamingResponse={isStreamingResponse}

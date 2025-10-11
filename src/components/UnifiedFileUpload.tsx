@@ -5,7 +5,6 @@ import React, {
   useState,
   useCallback,
 } from "react";
-import { uploadFilesToDatabase } from "../utils/fileUpload";
 import { extractImagesFromPdf, validatePdfFile } from "../utils/pdfExtraction";
 import { useToast } from "../helper/Toast";
 
@@ -123,18 +122,6 @@ const UnifiedFileUploadSection = forwardRef<
             // Only take the first file for docs mode (replace existing selection)
             const selectedFiles = validImageFiles.slice(0, 1);
             setSelectedFiles(selectedFiles);
-
-            // Upload files to database if projectId and getToken are provided
-            if (projectId && getToken) {
-              try {
-                const token = await getToken();
-                if (token) {
-                  await uploadFilesToDatabase(selectedFiles, projectId, token);
-                }
-              } catch (error) {
-                // Don't show error to user as this is a background operation
-              }
-            }
 
             showToast(`Document converted to image successfully`, "success");
           } else {
