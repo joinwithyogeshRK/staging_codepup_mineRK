@@ -1,3 +1,4 @@
+// Image-upload-component.tsx
 import React, { useCallback, useState } from "react";
 import { Upload, ImageIcon, FileText, Lightbulb } from "lucide-react";
 import PdfPreview from "./pdfpreview";
