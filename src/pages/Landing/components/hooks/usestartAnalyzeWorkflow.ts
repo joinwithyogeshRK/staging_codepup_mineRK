@@ -16,7 +16,9 @@ interface UseProjectWorkflowParams {
   projects: Project[];
   selectedProjectType: "frontend" | "fullstack" | null;
   supabaseConfig?: any;
-  setSupabaseConfig?: React.Dispatch<React.SetStateAction<SupabaseConfig | undefined>>;
+  setSupabaseConfig?: React.Dispatch<
+    React.SetStateAction<SupabaseConfig | undefined>
+  >;
   isConfigValid: boolean;
   currentProjectId: number | null;
   workflowActive: boolean;
@@ -62,7 +64,7 @@ export function useProjectWorkflow({
           try {
             const config = JSON.parse(stored);
             //@ts-ignore
-            if(config) setSupabaseConfig(config);
+            if (config) setSupabaseConfig(config);
             // else setSupabaseConfig()
           } catch (error) {}
         }
@@ -95,7 +97,7 @@ export function useProjectWorkflow({
         selectedPdfs.forEach((file) => {
           formData.append("images", file);
         });
-        /// ------- DEBUGGING LOGS ------
+        /*// ------- DEBUGGING LOGS ------
         for (const [key, value] of formData.entries()) {
           if (value instanceof File) {
             console.log(
@@ -105,7 +107,7 @@ export function useProjectWorkflow({
             console.log(`${key}:`, value);
           }
         }
-        // ----------------------------------
+        // ---------------------------------- */
         const analyzeResponse = await axios.post(
           `${BASE_URL}/api/design/analyze`,
           formData,
@@ -154,7 +156,6 @@ export function useProjectWorkflow({
           });
         }
       } catch (error) {
-        console.error("Error in startAnalyzeWorkflow:", error);
       } finally {
         setIsLoading(false);
       }

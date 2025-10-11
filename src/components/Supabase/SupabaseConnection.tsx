@@ -97,11 +97,7 @@ function SupabaseConnection({
             headers: { Authorization: `Bearer ${token}` },
           }
         );
-        console.log("Access token saved to user profile:", userResponse.data);
-      } catch (e) {
-        console.error("Failed to save access token to user profile:", e);
-        // Don't throw error here as this is not critical for the main flow
-      }
+      } catch (e) {}
 
       localStorage.setItem("supabaseAccessToken", accessToken);
       const data = await res.json();
@@ -142,7 +138,6 @@ function SupabaseConnection({
 
       localStorage.setItem("supabaseConfig", JSON.stringify(supabaseConfig));
     } catch (err) {
-      console.error("Error:", err);
       try {
         // Try to parse error as JSON to extract message
         const errorText =

@@ -97,7 +97,6 @@ const ImageUploadSection = ({
             }
           }
         } catch (error) {
-          console.error("Error extracting PDF images:", error);
           showToast("Failed to extract images from PDF", "error");
         } finally {
           setIsProcessingPdf(false);

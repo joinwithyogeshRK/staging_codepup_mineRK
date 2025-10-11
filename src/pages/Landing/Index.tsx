@@ -351,6 +351,7 @@ const Index = () => {
 
     amplitude.track("Blue Generate button");
 
+    /*
     console.log("Generate button clicked with:", {
       selectedProjectType,
       supabaseConfig,
@@ -359,6 +360,7 @@ const Index = () => {
       workflowActive,
       prompt: prompt.trim()
     });
+    */
 
     // if (
     //   selectedProjectType === "fullstack" &&
@@ -368,11 +370,8 @@ const Index = () => {
     //   setShowProjectTypeSelector(true);
     //   return;
     // }
-    console.log("Supabase COnfig -->", supabaseConfig);
-    console.log("Supabase isconfigvalid --->", isConfigValid);
 
     if (currentProjectId && !workflowActive && prompt.trim()) {
-      console.log("Starting workflow for project:", currentProjectId);
       setWorkflowActive(true);
       await startAnalyzeWorkflow(currentProjectId, prompt);
       // Clear files after starting workflow to prevent re-upload
@@ -382,7 +381,6 @@ const Index = () => {
     }
 
     if (workflowActive && currentProjectId && prompt.trim()) {
-      console.log("Continuing workflow for project:", currentProjectId);
       await startAnalyzeWorkflow(currentProjectId, prompt);
       // Clear files after continuing workflow to prevent re-upload
       setSelectedImages([]);
@@ -1183,7 +1181,6 @@ const Index = () => {
               token,
               baseUrl: BASE_URL,
             });
-            console.log("Created fullstack project:", newProject);
             setProjects((prev) => [newProject, ...prev]);
             setCurrentProjectId(newProject.id);
             setShowProjectTypeSelector(false);

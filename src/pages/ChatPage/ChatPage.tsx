@@ -503,9 +503,6 @@ const ChatPage: React.FC = () => {
     }
     amplitude.track("Publish Button Clicked");
 
-    console.log("Deploying project with scope:", projectScope);
-    console.log("Project ID:", projectId);
-
     // Add deployment message to chat once
     const deployMessage = {
       id: uuidv4(),
@@ -527,21 +524,16 @@ const ChatPage: React.FC = () => {
           const stored = localStorage.getItem("supabaseConfig");
           if (stored) {
             supabaseConfig = JSON.parse(stored);
-            console.log("Using Supabase config for fullstack deployment:", supabaseConfig);
           } else {
-            console.warn("No Supabase config found in localStorage for fullstack project");
           }
         } catch (error) {
-          console.error("Failed to parse stored Supabase config:", error);
         }
       }
       
-      console.log("Calling startDeployStore with:", { projectId, token: "***", projectScope, supabaseConfig });
       await startDeployStore(projectId, token, projectScope, supabaseConfig);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown deployment error";
-      console.error("Deployment error:", errorMessage);
       showToast(`${errorMessage}`, "error");
       const errorChatMessage = {
         id: uuidv4(),
