@@ -6,7 +6,6 @@ import axios from "axios";
 import { useAuth } from "@clerk/clerk-react";
 import { StreamingCodeParser } from "../pages/streaming";
 import { WorkflowStateManager } from "../utils/workflowStateManager";
-import { uploadFilesToDatabase } from "../utils/fileUpload";
 import {
   validateFile,
   validateModificationLimits,
@@ -760,24 +759,7 @@ export const useChatPageLogic = (
     setShowCodeStream,
   ]);
 
-  // Helper function to upload files to database
-  const uploadFilesToDatabaseHelper = useCallback(
-    async (files: File[]) => {
-      if (!files || files.length === 0 || !projectId) return;
-
-      try {
-        const token = await getToken();
-        if (token) {
-          const result = await uploadFilesToDatabase(files, projectId, token);
-          // We don't need to handle the result here since this is just for database storage
-          // The main workflow in Index.tsx handles the PDF enhancement logic
-        }
-      } catch (error) {
-        // Don't show error to user as this is a background operation
-      }
-    },
-    [projectId, getToken]
-  );
+  // Removed file upload to database functionality
 
   // Universal file handling functions
   const handleFileSelect = useCallback(
@@ -895,7 +877,6 @@ export const useChatPageLogic = (
     [
       setSelectedFiles,
       setError,
-      uploadFilesToDatabaseHelper,
       existingProject,
       currentProject?.status,
       selectedFiles,
@@ -2368,12 +2349,7 @@ export const useChatPageLogic = (
       setRawFilesForUpload([]);
 
       // For modification, skip database storage and use raw files directly
-      // Upload files to database when send is clicked (async, don't wait) - SKIP FOR MODIFICATION
-      if (currentFiles.length > 0 && !existingProject) {
-        uploadFilesToDatabaseHelper(currentFiles).catch(() => {
-          // Silent fail - don't block UI
-        });
-      }
+      // Removed file upload to database functionality
 
       // For modification request, use rawFilesForUpload (raw files) instead of selectedFiles (extracted images)
       const filesForModification = [...rawFilesForUpload];
@@ -2405,12 +2381,7 @@ export const useChatPageLogic = (
     setSelectedFiles([]);
     setRawFilesForUpload([]);
 
-    // Upload files to database when send is clicked (async, don't wait)
-    if (currentFiles.length > 0) {
-      uploadFilesToDatabaseHelper(currentFiles).catch(() => {
-        // Silent fail - don't block UI
-      });
-    }
+    // Removed file upload to database functionality
 
     try {
       if (projectId) {
@@ -2443,7 +2414,6 @@ export const useChatPageLogic = (
     rawFilesForUpload,
     startCompleteWorkflow,
     sendModificationRequest,
-    uploadFilesToDatabaseHelper,
     setIsLoading,
     setHasUserStopped,
     setError,

@@ -1,4 +1,4 @@
-// useProjectWorkflow.ts
+// usestartAnalyzeWorkflow.ts
 import { useCallback } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -63,8 +63,6 @@ export function useProjectWorkflow({
             const config = JSON.parse(stored);
             //@ts-ignore
             if(config) setSupabaseConfig(config);
-            console.log("Setting Supabase creds with this -> ", config)
-            console.log("What is set is here -->", supabaseConfig)
             // else setSupabaseConfig()
           } catch (error) {}
         }
@@ -83,6 +81,11 @@ export function useProjectWorkflow({
         const currentProject = projects.find((p) => p.id === projectId);
         if (currentProject?.name) {
           formData.append("projectName", currentProject.name);
+        }
+
+        // Add Supabase config to formData if available
+        if (stored) {
+          formData.append("supabaseConfig", stored);
         }
 
         // Send both raw images and PDFs directly
@@ -136,10 +139,6 @@ export function useProjectWorkflow({
           const projectScope =
             currentProject?.scope || selectedProjectType || "frontend";
 
-          console.log("Navigating to chatPage with scope:", projectScope);
-          console.log("Current project:", currentProject);
-          console.log("Supabase config:", supabaseConfig);
-          console.log(localStorage.getItem("AccessToken"))
           // Navigate directly to chatpage (equivalent to generateApplication)
           const encodeIdParams = encodeId(projectId);
           navigate(`/chatPage/${encodeIdParams}`, {

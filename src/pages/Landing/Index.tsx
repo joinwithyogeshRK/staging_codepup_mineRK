@@ -68,7 +68,6 @@ import { computeProjectStats } from "./components/utils/projectStatsUtils";
 import { useToast } from "@/helper/Toast";
 import { useProjectWorkflow } from "./components/hooks/usestartAnalyzeWorkflow";
 import { amplitude } from "../../utils/amplitude";
-import { uploadFilesToDatabase } from "../../utils/fileUpload";
 import type {
   Project,
   DbUser,

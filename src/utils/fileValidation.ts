@@ -1,3 +1,4 @@
+// fileValidation.ts
 import * as pdfjsLib from "pdfjs-dist";
 
 /**
