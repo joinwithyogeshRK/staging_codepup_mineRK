@@ -6,6 +6,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "../../components/ui/dialog";
+import VersionHistoryWrapper from "../../components/version";
 import type { UnifiedFileUploadRef } from "../../components/UnifiedFileUpload";
 import React, {
   useContext,
@@ -815,6 +816,22 @@ const ChatPage: React.FC = () => {
 
               {/* Right side: GitHub, Credits, and Share buttons */}
               <div className="flex items-center gap-2 h-8">
+                  {projectStatus === "ready" && projectId && (
+    <VersionHistoryWrapper
+      projectId={projectId}
+      onVersionRestored={(versionNumber) => {
+        // Refresh preview iframe with cache busting
+        setIframeKey((prev) => prev + 1);
+        
+        // Show success notification
+        showToast(
+          `Version ${versionNumber} restored successfully`, 
+          "success"
+        );
+      }}
+    />
+  )}
+
                 {/* GitHub Connect Button - Desktop only */}
                 {projectStatus === "ready" && (
                   <div className="hidden lg:flex items-center h-8">
