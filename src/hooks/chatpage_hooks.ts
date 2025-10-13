@@ -1,13 +1,15 @@
 // hooks/useChatPage.ts - ENHANCED WITH VISIBLE CODE STREAMING
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, use } from "react";
 import { useLocation } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "@clerk/clerk-react";
 import { StreamingCodeParser } from "../pages/streaming";
 import { WorkflowStateManager } from "../utils/workflowStateManager";
-import { uploadFilesToDatabase } from "../utils/fileUpload";
-import { validateFile, validateModificationLimits } from "../utils/fileValidation";
+import {
+  validateFile,
+  validateModificationLimits,
+} from "../utils/fileValidation";
 import { extractImagesFromPdf, validatePdfFile } from "../utils/pdfExtraction";
 
 import type {
@@ -318,8 +320,7 @@ export const useChatPageLogic = (
           : undefined;
       const creditsValue = typeof total === "number" ? total : 0;
       setCredits(creditsValue);
-    } catch (e) {
-    }
+    } catch (e) {}
   }, [baseUrl, getToken, setCredits, clerkId]);
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -346,11 +347,6 @@ export const useChatPageLogic = (
           name: "Design Generation",
           icon: "🎨",
           description: "Creating design system",
-        },
-        {
-          name: "Structure Planning",
-          icon: "📋",
-          description: "Planning file structure",
         },
         {
           name: "Backend Generation",
@@ -384,8 +380,7 @@ export const useChatPageLogic = (
       try {
         const parsedUser = JSON.parse(storedDbUser);
         return parsedUser.id;
-      } catch (e) {
-      }
+      } catch (e) {}
     }
 
     const storedUserId = localStorage.getItem("userId");
@@ -402,18 +397,16 @@ export const useChatPageLogic = (
       assets: File[] = []
     ) => {
       if (!projectId || !modificationPrompt.trim()) return;
-  
+
       // Credits: refresh/authorize before modification
       fetchCredits();
-  
+
       setIsModifying(true);
       setIsStreamingModification(true);
       setStreamingData(null);
       setError("");
-  
-  
+
       try {
-        
         // Create FormData to handle both text and files
         const formData = new FormData();
         formData.append("prompt", modificationPrompt);
@@ -423,14 +416,14 @@ export const useChatPageLogic = (
         if (clerkId) {
           formData.append("clerkId", clerkId);
         }
-  
+
         const apiEndpoint = `${baseUrl}/api/modify/stream`;
-        
+
         // Use regular image endpoint for all file types
         images.forEach((image) => {
           formData.append("images", image);
         });
-  
+
         const token = await getToken();
         const response = await fetch(apiEndpoint, {
           method: "POST",
@@ -439,27 +432,27 @@ export const useChatPageLogic = (
           },
           body: formData,
         });
-  
+
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-  
+
         const reader = response.body?.getReader();
         if (!reader) {
           throw new Error("No response body");
         }
-  
+
         const decoder = new TextDecoder();
         let buffer = "";
-  
+
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-  
+
           buffer += decoder.decode(value, { stream: true });
           const lines = buffer.split("\n");
           buffer = lines.pop() || "";
-  
+
           for (const line of lines) {
             if (
               line.startsWith("event: ") &&
@@ -467,22 +460,22 @@ export const useChatPageLogic = (
             ) {
               const eventType = line.slice(7).trim();
               const dataLine = lines[lines.indexOf(line) + 1];
-  
+
               try {
                 const eventData = JSON.parse(dataLine.slice(6));
-  
+
                 // Update streaming data for display
                 setStreamingData({
                   type: eventType,
                   ...eventData,
                   timestamp: new Date().toISOString(),
                 });
-  
+
                 // Handle different event types
                 if (eventType === "personality_response") {
                   setIsStreamingModification(false);
                   setIsModifying(false);
-                  
+
                   // Add personality response message to chat
                   const personalityMessage: Message = {
                     id: `personality-${Date.now()}`,
@@ -491,11 +484,10 @@ export const useChatPageLogic = (
                     timestamp: new Date(),
                   };
                   setMessages((prev) => [...prev, personalityMessage]);
-                  
                 } else if (eventType === "clarification") {
                   setIsStreamingModification(false);
                   setIsModifying(false);
-                  
+
                   // Add clarification message to chat
                   const clarificationMessage: Message = {
                     id: `clarification-${Date.now()}`,
@@ -504,11 +496,10 @@ export const useChatPageLogic = (
                     timestamp: new Date(),
                   };
                   setMessages((prev) => [...prev, clarificationMessage]);
-                  
                 } else if (eventType === "conversation_response") {
                   setIsStreamingModification(false);
                   setIsModifying(false);
-                  
+
                   // Add conversation response message to chat
                   const conversationMessage: Message = {
                     id: `conversation-${Date.now()}`,
@@ -517,11 +508,10 @@ export const useChatPageLogic = (
                     timestamp: new Date(),
                   };
                   setMessages((prev) => [...prev, conversationMessage]);
-                  
                 } else if (eventType === "multiple_changes") {
                   setIsStreamingModification(false);
                   setIsModifying(false);
-                  
+
                   // Add multiple changes guidance message to chat
                   const guidanceMessage: Message = {
                     id: `guidance-${Date.now()}`,
@@ -530,16 +520,15 @@ export const useChatPageLogic = (
                     timestamp: new Date(),
                   };
                   setMessages((prev) => [...prev, guidanceMessage]);
-                  
                 } else if (eventType === "complete") {
                   setIsStreamingModification(false);
                   setIsModifying(false);
-  
+
                   // Update preview URL if new one is provided - THIS IS KEY FOR NEW DEPLOYMENT URL
                   if (eventData.data?.previewUrl) {
                     setPreviewUrl(eventData.data.previewUrl);
                   }
-  
+
                   // Use the LLM-generated completion message if available, otherwise fallback to detailed message
                   let completionContent;
                   if (eventData.data?.completionMessage) {
@@ -558,7 +547,7 @@ export const useChatPageLogic = (
                       eventData.data?.totalAddedFiles || 0
                     }`;
                   }
-  
+
                   const successMessage: Message = {
                     id: `mod-success-${Date.now()}`,
                     content: completionContent,
@@ -566,65 +555,70 @@ export const useChatPageLogic = (
                     timestamp: new Date(),
                   };
                   setMessages((prev) => [...prev, successMessage]);
-  
+
                   // Refresh credits after successful modification
                   fetchCredits();
-                  
                 } else if (eventType === "error") {
                   setIsStreamingModification(false);
                   setIsModifying(false);
-                  
+
                   // Check if it's a timeout error and handle accordingly
                   if (eventData.timeout) {
-                    setError("⏰ Maximum timeout reached (10 minutes). Please try again with a smaller modification or break it into parts.");
-                    
+                    setError(
+                      "⏰ Maximum timeout reached (10 minutes). Please try again with a smaller modification or break it into parts."
+                    );
+
                     // Add timeout error message to chat
                     const timeoutMessage: Message = {
                       id: `timeout-error-${Date.now()}`,
-                      content: "⏰ **Timeout Error**\n\nDue to High Demand Our Servers are busy right now please try after few minutes.",
+                      content:
+                        "⏰ **Timeout Error**\n\nDue to High Demand Our Servers are busy right now please try after few minutes.",
                       type: "assistant",
                       timestamp: new Date(),
                     };
                     setMessages((prev) => [...prev, timeoutMessage]);
                   } else {
                     setError(eventData.error || "Modification failed");
-                    
+
                     // Add regular error message to chat for non-timeout errors
                     const errorMessage: Message = {
                       id: `error-${Date.now()}`,
-                      content: `❌ **Error**: ${eventData.error || "Modification failed"}`,
-                      type: "assistant", 
+                      content: `❌ **Error**: ${
+                        eventData.error || "Modification failed"
+                      }`,
+                      type: "assistant",
                       timestamp: new Date(),
                     };
                     setMessages((prev) => [...prev, errorMessage]);
                   }
-                  
+
                   // Refresh credits after failed modification
                   fetchCredits();
                 }
-              } catch (e) {
-              }
+              } catch (e) {}
             }
           }
         }
       } catch (error: unknown) {
-        
         // Properly type check the error
         if (error instanceof Error) {
           // Check if it's a network timeout or connection issue
-          if (error.message.includes('timeout')) {
-            setError("⏰ Connection timeout. Please check your internet connection and try again.");
-            
+          if (error.message.includes("timeout")) {
+            setError(
+              "⏰ Connection timeout. Please check your internet connection and try again."
+            );
+
             const networkTimeoutMessage: Message = {
               id: `network-timeout-${Date.now()}`,
-              content: "⏰ **Connection Timeout**\n\nLost connection to the server. Please check your internet connection and try again.",
+              content:
+                "⏰ **Connection Timeout**\n\nLost connection to the server. Please check your internet connection and try again.",
               type: "assistant",
               timestamp: new Date(),
             };
             setMessages((prev) => [...prev, networkTimeoutMessage]);
           } else {
             setError("Failed to apply modification");
-            
+
             const generalErrorMessage: Message = {
               id: `general-error-${Date.now()}`,
               content: `❌ **Connection Error**: Failed to apply modification. ${error.message}. Please try again.`,
@@ -633,10 +627,10 @@ export const useChatPageLogic = (
             };
             setMessages((prev) => [...prev, generalErrorMessage]);
           }
-        } else if (typeof error === 'string') {
+        } else if (typeof error === "string") {
           // Handle string errors
           setError(error);
-          
+
           const stringErrorMessage: Message = {
             id: `string-error-${Date.now()}`,
             content: `❌ **Error**: ${error}`,
@@ -647,7 +641,7 @@ export const useChatPageLogic = (
         } else {
           // Handle unknown error types
           setError("Failed to apply modification");
-          
+
           const unknownErrorMessage: Message = {
             id: `unknown-error-${Date.now()}`,
             content: `❌ **Unknown Error**: An unexpected error occurred. Please try again.`,
@@ -656,7 +650,7 @@ export const useChatPageLogic = (
           };
           setMessages((prev) => [...prev, unknownErrorMessage]);
         }
-        
+
         setIsStreamingModification(false);
         setIsModifying(false);
         fetchCredits();
@@ -765,40 +759,26 @@ export const useChatPageLogic = (
     setShowCodeStream,
   ]);
 
-  // Helper function to upload files to database
-  const uploadFilesToDatabaseHelper = useCallback(async (files: File[]) => {
-    if (!files || files.length === 0 || !projectId) return;
-    
-    try {
-      const token = await getToken();
-      if (token) {
-        const result = await uploadFilesToDatabase(files, projectId, token);
-        // We don't need to handle the result here since this is just for database storage
-        // The main workflow in Index.tsx handles the PDF enhancement logic
-      }
-    } catch (error) {
-      // Don't show error to user as this is a background operation
-    }
-  }, [projectId, getToken]);
+  // Removed file upload to database functionality
 
   // Universal file handling functions
   const handleFileSelect = useCallback(
     async (event: React.ChangeEvent<HTMLInputElement>) => {
       const files = Array.from(event.target.files || []);
-      
+
       if (files.length === 0) return;
 
       // First, validate all files and calculate projected counts
       let projectedSelectedFiles = [...selectedFiles];
       let projectedRawFiles = [...rawFilesForUpload];
-      
+
       for (const file of files) {
         // Validate file using our validation utility
         const validation = await validateFile(file);
         if (validation !== true) {
           setError(validation as string);
           if (event.target) {
-            event.target.value = '';
+            event.target.value = "";
           }
           return; // Exit entire function on validation failure
         }
@@ -813,7 +793,7 @@ export const useChatPageLogic = (
           if (modificationValidation !== true) {
             setError(modificationValidation as string);
             if (event.target) {
-              event.target.value = '';
+              event.target.value = "";
             }
             return; // Exit entire function on validation failure
           }
@@ -828,7 +808,12 @@ export const useChatPageLogic = (
           // For generation: handle PDFs with extraction
           if (file.type === "application/pdf") {
             // For PDFs, we'll add up to 3 extracted images
-            projectedSelectedFiles = [...projectedSelectedFiles, ...Array(3).fill(null).map((_, i) => new File([], `page_${i + 1}.png`))];
+            projectedSelectedFiles = [
+              ...projectedSelectedFiles,
+              ...Array(3)
+                .fill(null)
+                .map((_, i) => new File([], `page_${i + 1}.png`)),
+            ];
             projectedRawFiles = [...projectedRawFiles, file];
           } else {
             // For non-PDF files, add 1 to each
@@ -843,37 +828,43 @@ export const useChatPageLogic = (
         // For modification, add files directly without extraction
         if (existingProject && currentProject?.status === "ready") {
           // For modification: add raw files directly
-          setSelectedFiles(prev => [...prev, file]);
-          setRawFilesForUpload(prev => [...prev, file]);
+          setSelectedFiles((prev) => [...prev, file]);
+          setRawFilesForUpload((prev) => [...prev, file]);
         } else {
           // For generation: handle PDF files specially - extract images for preview but store raw PDF
           if (file.type === "application/pdf") {
             // Validate PDF file size and page count
-            if (!validatePdfFile(file, 5, 5, (message, type) => {
-              setError(message);
-            })) {
+            if (
+              !validatePdfFile(file, 5, 5, (message, type) => {
+                setError(message);
+              })
+            ) {
               if (event.target) {
-                event.target.value = '';
+                event.target.value = "";
               }
               return;
             }
 
             // Extract images from PDF for preview (max 3 pages for chat)
-            const result = await extractImagesFromPdf(file, 3, (message, type) => {
-              setError(message);
-            });
+            const result = await extractImagesFromPdf(
+              file,
+              3,
+              (message, type) => {
+                setError(message);
+              }
+            );
 
             if (result) {
               // Add the extracted images to existing files (don't replace)
-              setSelectedFiles(prev => [...prev, ...result.extractedImages]);
-              
+              setSelectedFiles((prev) => [...prev, ...result.extractedImages]);
+
               // Add the raw PDF to existing files (don't replace)
-              setRawFilesForUpload(prev => [...prev, result.originalPdf]);
+              setRawFilesForUpload((prev) => [...prev, result.originalPdf]);
             }
           } else {
             // For non-PDF files, add to existing files (don't replace)
-            setSelectedFiles(prev => [...prev, file]);
-            setRawFilesForUpload(prev => [...prev, file]);
+            setSelectedFiles((prev) => [...prev, file]);
+            setRawFilesForUpload((prev) => [...prev, file]);
           }
         }
       }
@@ -883,7 +874,14 @@ export const useChatPageLogic = (
         event.target.value = "";
       }
     },
-    [setSelectedFiles, setError, uploadFilesToDatabaseHelper, existingProject, currentProject?.status, selectedFiles, rawFilesForUpload]
+    [
+      setSelectedFiles,
+      setError,
+      existingProject,
+      currentProject?.status,
+      selectedFiles,
+      rawFilesForUpload,
+    ]
   );
 
   const removeFile = useCallback(
@@ -895,11 +893,11 @@ export const useChatPageLogic = (
       } else {
         // For generation, handle PDF extraction logic
         const fileToRemove = rawFilesForUpload[index];
-        
+
         if (fileToRemove && fileToRemove.type === "application/pdf") {
           // For PDFs, we need to remove the corresponding extracted images
           // We'll use a more reliable approach: remove all extracted images that have the same originalPdfName
-          setSelectedFiles((prev) => 
+          setSelectedFiles((prev) =>
             prev.filter((file) => {
               // Check if this is an extracted image from the PDF being removed
               // Extracted images have originalPdfName property
@@ -911,12 +909,18 @@ export const useChatPageLogic = (
           // For non-PDF files, remove the corresponding file from selectedFiles
           setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
         }
-        
+
         // Remove from rawFilesForUpload
         setRawFilesForUpload((prev) => prev.filter((_, i) => i !== index));
       }
     },
-    [setSelectedFiles, setRawFilesForUpload, rawFilesForUpload, existingProject, currentProject?.status]
+    [
+      setSelectedFiles,
+      setRawFilesForUpload,
+      rawFilesForUpload,
+      existingProject,
+      currentProject?.status,
+    ]
   );
 
   const clearSelectedFiles = useCallback(() => {
@@ -1117,7 +1121,6 @@ export const useChatPageLogic = (
             };
             setMessages((prev) => [...prev, completionMessage]);
 
-
             if (data.result.projectId) {
               setCurrentProjectInfo({
                 id: data.result.projectId,
@@ -1145,7 +1148,10 @@ export const useChatPageLogic = (
           break;
 
         case "error":
-          setError(data.error || "Arf! 🐾 We’ve lost connection to our den for a moment.\nDon’t worry — our pup is still working hard in the background to fetch your app!\nPlease head back to the home page and give it about 5 minutes. Then return, and your project should be ready to play fetch with. 🐕✨");
+          setError(
+            data.error ||
+              "Arf! 🐾 We’ve lost connection to our den for a moment.\nDon’t worry — our pup is still working hard in the background to fetch your app!\nPlease head back to the home page and give it about 5 minutes. Then return, and your project should be ready to play fetch with. 🐕✨"
+          );
           setIsStreamingGeneration(false);
           setIsWorkflowActive(false);
           setProjectStatus("error");
@@ -1435,13 +1441,50 @@ export const useChatPageLogic = (
         const apiRoute =
           projectScope === "frontend"
             ? "/api/design/generateFrontendOnly" // Frontend-only route
-            : "/api/design/generate-frontend"; // Fullstack route (main + admin)
+            : "/api/generate-fullstack/generate-frontend-with-flexible-backend"; // Fullstack route (main + admin)
 
-        // Only require supabaseConfig for fullstack projects
-        if (projectScope === "fullstack" && !supabaseConfig) {
-          throw new Error(
-            "Supabase configuration is missing for fullstack project"
+        // Only require supabaseConfig for fullstack projects and validate all fields
+        let effectiveSupabaseConfig = supabaseConfig as any;
+        effectiveSupabaseConfig.supabaseToken = localStorage.getItem("supabaseAccessToken");
+          if (!projectId || !clerkId) return;
+          try {
+            const token = await getToken();
+            const res = await fetch(`${baseUrl}/api/projects/${projId}`, {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              },
+            });
+
+            if (!res.ok) {
+              throw new Error(`Failed to fetch project data (${res.status})`);
+            }
+            const data: { aneonkey?: string; databaseUrl?: string, supabaseurl?:string } = await res.json();
+            effectiveSupabaseConfig.supabaseAnonKey = data.aneonkey;
+            effectiveSupabaseConfig.databaseUrl = data.databaseUrl;
+            effectiveSupabaseConfig.supabaseUrl = data.supabaseurl;
+          } catch (err) {
+          }
+        
+        const supabaseAccessToken =
+          effectiveSupabaseConfig?.supabaseToken ||
+          localStorage.getItem("supabaseAccessToken") ||
+          localStorage.getItem("supabaseToken") ||
+          "";
+
+        if (projectScope === "fullstack") {
+          const hasAll = Boolean(
+            effectiveSupabaseConfig?.supabaseUrl?.trim() &&
+              effectiveSupabaseConfig?.supabaseAnonKey?.trim() &&
+              (effectiveSupabaseConfig?.databaseUrl?.trim() || "") !== undefined &&
+              supabaseAccessToken?.trim()
           );
+          if (!hasAll) {
+            throw new Error(
+              "All Supabase configuration fields are required (supabaseUrl, supabaseAnonKey, supabaseToken, databaseUrl)"
+            );
+          }
         }
 
         // Prepare request body based on project scope
@@ -1452,16 +1495,19 @@ export const useChatPageLogic = (
         };
 
         // Only include supabaseConfig for fullstack projects
-        if (projectScope === "fullstack" && supabaseConfig) {
+        if (projectScope === "fullstack" && effectiveSupabaseConfig) {
           Object.assign(requestBody, {
-            supabaseUrl: supabaseConfig.supabaseUrl,
-            supabaseAnonKey: supabaseConfig.supabaseAnonKey,
-            supabaseToken: supabaseConfig.supabaseToken,
-            databaseUrl: supabaseConfig.databaseUrl,
+            supabaseUrl: effectiveSupabaseConfig.supabaseUrl,
+            supabaseAnonKey: effectiveSupabaseConfig.supabaseAnonKey,
+            supabaseToken: supabaseAccessToken,
+            databaseUrl: effectiveSupabaseConfig.databaseUrl,       
           });
         }
 
         const token = await getToken();
+        //// ------ DEBUGGING ------
+        // console.log("front-of-flexible-backend's BODY --->", requestBody);
+        //// ------------
         const response = await fetch(`${baseUrl}${apiRoute}`, {
           method: "POST",
           headers: {
@@ -1469,15 +1515,6 @@ export const useChatPageLogic = (
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify(requestBody),
-          // body: JSON.stringify({
-          //   projectId: projId,
-          //   supabaseUrl: supabaseConfig.supabaseUrl,
-          //   supabaseAnonKey: supabaseConfig.supabaseAnonKey,
-          //   supabaseToken: supabaseConfig.supabaseToken,
-          //   databaseUrl: supabaseConfig.databaseUrl,
-          //   userId: getCurrentUserId(),
-          //   clerkId: clerkId,
-          // }),
         });
 
         if (!response.ok) {
@@ -1518,8 +1555,7 @@ export const useChatPageLogic = (
                 ) {
                   handleStreamingData(data, projId);
                 }
-              } catch (e) {
-              }
+              } catch (e) {}
             }
           }
 
@@ -1621,8 +1657,8 @@ export const useChatPageLogic = (
       if (
         projectScope === "fullstack" &&
         (!supabaseConfig ||
-          !supabaseConfig.supabaseUrl ||
-          !supabaseConfig.supabaseAnonKey)
+          !supabaseConfig.supabaseUrl?.trim() ||
+          !supabaseConfig.supabaseAnonKey?.trim())
       ) {
         setError(
           "Supabase configuration is missing. Please ensure backend is properly configured."
@@ -1666,8 +1702,6 @@ export const useChatPageLogic = (
         // **GUARD**: Define which stages should run
         const shouldRunDesignGeneration =
           !completedStages.includes("Design Generation");
-        const shouldRunStructurePlanning =
-          !completedStages.includes("Structure Planning");
         const shouldRunBackendGeneration =
           !completedStages.includes("Backend Generation");
         const shouldRunFrontendGeneration = !completedStages.includes(
@@ -1748,12 +1782,6 @@ export const useChatPageLogic = (
               75
             );
 
-            addWorkflowStep({
-              step: "Frontend Generation",
-              message: "Starting frontend generation with live deployment...",
-              isComplete: false,
-            });
-
             await startStreamingFrontendGeneration(projId);
 
             // Note: Completion will be marked in handleStreamingData when "result" is received
@@ -1825,63 +1853,7 @@ export const useChatPageLogic = (
             setWorkflowProgress(40);
           }
 
-          // Step 2: Structure Planning (50% progress)
-          if (shouldRunStructurePlanning) {
-            WorkflowStateManager.setCurrentStage(
-              projId,
-              "Structure Planning",
-              "running",
-              projectScope,
-              50
-            );
-
-            addWorkflowStep({
-              step: "Structure Planning",
-              message: "Planning file structure and documentation...",
-              isComplete: false,
-            });
-
-            const token = await getToken();
-            const planResponse = await axios.post(
-              `${baseUrl}/api/design/plan-structure`,
-              {
-                projectId: projId,
-                scope: projectScope,
-              },
-              {
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                },
-              }
-            );
-
-            if (!planResponse.data.success) {
-              throw new Error(
-                planResponse.data.error || "Failed to plan structure"
-              );
-            }
-
-            updateWorkflowStep("Structure Planning", {
-              message: `✅ Planned structure with ${
-                planResponse.data.totalFileCount || 0
-              } files!`,
-              isComplete: true,
-              data: planResponse.data,
-            });
-
-            WorkflowStateManager.markStageCompleted(
-              projId,
-              "Structure Planning",
-              60
-            );
-            setWorkflowProgress(60);
-
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-          } else {
-            setWorkflowProgress(60);
-          }
-
-          // Step 3: Backend Generation (75% progress)
+          // Step 2: Backend Generation (75% progress)
           if (shouldRunBackendGeneration) {
             WorkflowStateManager.setCurrentStage(
               projId,
@@ -1900,10 +1872,9 @@ export const useChatPageLogic = (
 
             const token = await getToken();
             const backendResponse = await axios.post(
-              `${baseUrl}/api/design/generate-backend`,
+              `${baseUrl}/api/generate-fullstack/generate-flexible-backend`,
               {
                 projectId: projId,
-                scope: projectScope,
               },
               {
                 headers: {
@@ -1911,7 +1882,6 @@ export const useChatPageLogic = (
                 },
               }
             );
-
             if (!backendResponse.data.success) {
               throw new Error(
                 backendResponse.data.error || "Failed to generate backend"
@@ -1940,7 +1910,7 @@ export const useChatPageLogic = (
             setWorkflowProgress(80);
           }
 
-          // Step 4: Frontend Generation (streaming) - 100% progress
+          // Step 3: Frontend Generation with DB Sync (100% progress)
           if (shouldRunFrontendGeneration) {
             WorkflowStateManager.setCurrentStage(
               projId,
@@ -1956,6 +1926,42 @@ export const useChatPageLogic = (
               isComplete: false,
             });
 
+
+
+
+
+            const supabaseAccessToken =
+              localStorage.getItem("supabaseAccessToken") || "";
+            // console.log("Supabase Access Token:", supabaseAccessToken);
+            // console.log("Supabase url:", supabaseConfig.supabaseUrl);
+            // console.log("Supabase anon:", supabaseConfig.supabaseAnonKey);
+            // console.log("Supabase dburl:", supabaseConfig.databaseUrl);
+            // console.log("Project ID:", projId);
+            // console.log("Clerk ID:", clerkId);
+            // console.log("User ID:", getCurrentUserId());
+
+            // Make the API call to sync database and prepare frontend
+            // const postBackendResponse = await axios.post(
+            //   `${baseUrl}/api/generate-fullstack/generate-frontend-with-flexible-backend`,
+            //   {
+            //     projectId: projId,
+            //     supabaseUrl: supabaseConfig.supabaseUrl,
+            //     supabaseAnonKey: supabaseConfig.supabaseAnonKey,
+            //     supabaseToken: supabaseAccessToken,
+            //     databaseUrl: supabaseConfig.databaseUrl || "",
+            //     userId: getCurrentUserId(),
+            //     clerkId,
+            //   },
+            //   {
+            //     headers: {
+            //       Authorization: `Bearer ${token}`,
+            //       "Content-Type": "application/json",
+            //     },
+            //   }
+            // );
+            // console.log("Final Output:", postBackendResponse);
+
+            // Now start streaming frontend generation
             await startStreamingFrontendGeneration(projId);
 
             // Note: Completion will be marked in handleStreamingData when "result" is received
@@ -2013,6 +2019,9 @@ export const useChatPageLogic = (
       getWorkflowSteps,
       loadProject,
       fetchCredits,
+      clerkId,
+      getCurrentUserId,
+      getToken,
     ]
   );
 
@@ -2069,8 +2078,7 @@ export const useChatPageLogic = (
           if (data.success) {
           } else {
           }
-        } catch (err) {
-        }
+        } catch (err) {}
       }
 
       // Add a user-visible message about stopping
@@ -2247,8 +2255,7 @@ export const useChatPageLogic = (
               },
               body: JSON.stringify({ projectId }),
             });
-          } catch (err) {
-          }
+          } catch (err) {}
         })();
       }
 
@@ -2340,12 +2347,7 @@ export const useChatPageLogic = (
       setRawFilesForUpload([]);
 
       // For modification, skip database storage and use raw files directly
-      // Upload files to database when send is clicked (async, don't wait) - SKIP FOR MODIFICATION
-      if (currentFiles.length > 0 && !existingProject) {
-        uploadFilesToDatabaseHelper(currentFiles).catch(() => {
-          // Silent fail - don't block UI
-        });
-      }
+      // Removed file upload to database functionality
 
       // For modification request, use rawFilesForUpload (raw files) instead of selectedFiles (extracted images)
       const filesForModification = [...rawFilesForUpload];
@@ -2372,17 +2374,12 @@ export const useChatPageLogic = (
     const currentPrompt = prompt;
     const currentFiles = [...rawFilesForUpload]; // Store files before clearing
     setPrompt("");
-    
+
     // Clear files immediately for better UX
     setSelectedFiles([]);
     setRawFilesForUpload([]);
-    
-    // Upload files to database when send is clicked (async, don't wait)
-    if (currentFiles.length > 0) {
-      uploadFilesToDatabaseHelper(currentFiles).catch(() => {
-        // Silent fail - don't block UI
-      });
-    }
+
+    // Removed file upload to database functionality
 
     try {
       if (projectId) {
@@ -2415,7 +2412,6 @@ export const useChatPageLogic = (
     rawFilesForUpload,
     startCompleteWorkflow,
     sendModificationRequest,
-    uploadFilesToDatabaseHelper,
     setIsLoading,
     setHasUserStopped,
     setError,
@@ -2430,34 +2426,34 @@ export const useChatPageLogic = (
     async (e: React.ClipboardEvent) => {
       const clipboardData = e.clipboardData;
       const items = Array.from(clipboardData.items);
-      
+
       // Check if any items are files
-      const fileItems = items.filter(item => item.kind === 'file');
-      
+      const fileItems = items.filter((item) => item.kind === "file");
+
       if (fileItems.length > 0) {
         e.preventDefault(); // Prevent default text paste
-        
+
         // Only allow one file at a time
         if (fileItems.length > 1) {
           setError("🐾 Arf! Only one file at a time, please!");
           return;
         }
-        
+
         const fileItem = fileItems[0];
         const file = fileItem.getAsFile();
-        
+
         if (!file) {
           setError("🐾 Arf! Could not read the pasted file!");
           return;
         }
-        
+
         // Validate file using our validation utility
         const validation = await validateFile(file);
         if (validation !== true) {
           setError(validation as string);
           return;
         }
-        
+
         // Check modification limits (only for modification, not generation)
         if (existingProject && currentProject?.status === "ready") {
           const modificationValidation = await validateModificationLimits(
@@ -2470,40 +2466,44 @@ export const useChatPageLogic = (
             return;
           }
         }
-        
+
         // For modification, add files directly without extraction
         if (existingProject && currentProject?.status === "ready") {
           // For modification: add raw files directly
-          setSelectedFiles(prev => [...prev, file]);
-          setRawFilesForUpload(prev => [...prev, file]);
+          setSelectedFiles((prev) => [...prev, file]);
+          setRawFilesForUpload((prev) => [...prev, file]);
         } else {
           // For generation: handle PDF files specially - extract images for preview but store raw PDF
           if (file.type === "application/pdf") {
             // Validate PDF file size and page count
-            if (!validatePdfFile(file, 5, 5, (message, type) => {
-              setError(message);
-            })) {
+            if (
+              !validatePdfFile(file, 5, 5, (message, type) => {
+                setError(message);
+              })
+            ) {
               return;
             }
-            
+
             // Extract images from PDF for preview (max 3 pages for chat)
-            const result = await extractImagesFromPdf(file, 3, (message, type) => {
-              setError(message);
-            });
-            
+            const result = await extractImagesFromPdf(
+              file,
+              3,
+              (message, type) => {
+                setError(message);
+              }
+            );
+
             if (result) {
               // Add the extracted images to existing files (don't replace)
-              setSelectedFiles(prev => [...prev, ...result.extractedImages]);
-              
+              setSelectedFiles((prev) => [...prev, ...result.extractedImages]);
+
               // Add the raw PDF to existing files (don't replace)
-              setRawFilesForUpload(prev => [...prev, result.originalPdf]);
-              
+              setRawFilesForUpload((prev) => [...prev, result.originalPdf]);
             }
           } else {
             // For non-PDF files, add to existing files (don't replace)
-            setSelectedFiles(prev => [...prev, file]);
-            setRawFilesForUpload(prev => [...prev, file]);
-            
+            setSelectedFiles((prev) => [...prev, file]);
+            setRawFilesForUpload((prev) => [...prev, file]);
           }
         }
       } else {

@@ -175,7 +175,6 @@ const PrizeModel: React.FC<PrizeModelProps> = ({ isOpen, onClose }) => {
         const rzp = new (window as any).Razorpay(options);
         rzp.open();
       } catch (err) {
-        console.error(err);
         setErrorMessage("Something went wrong. Please try again.");
       } finally {
         setLoadingIndex(null);

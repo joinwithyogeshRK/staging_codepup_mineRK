@@ -3,6 +3,13 @@ import { v4 as uuidv4 } from "uuid";
 
 type DeployPhase = "idle" | "deploying" | "success" | "error";
 
+interface SupabaseConfig {
+  supabaseUrl: string;
+  supabaseAnonKey: string;
+  supabaseToken: string;
+  databaseUrl: string;
+}
+
 interface DeployState {
   projectId: number | null;
   phase: DeployPhase;
@@ -11,7 +18,7 @@ interface DeployState {
   deployedUrl?: string;
 
   // actions
-  startDeploy: (projectId: number, token: string) => Promise<void>;
+  startDeploy: (projectId: number, token: string, scope?: string, supabaseConfig?: SupabaseConfig) => Promise<void>;
   reset: () => void;
 }
 
@@ -22,24 +29,41 @@ export const useDeployStore = create<DeployState>((set, get) => ({
   error: undefined,
   deployedUrl: undefined,
 
-  startDeploy: async (projectId: number, token: string) => {
+  startDeploy: async (projectId: number, token: string, scope?: string, supabaseConfig?: SupabaseConfig) => {
     set({ projectId, phase: "deploying", isDeploying: true, error: undefined });
 
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_BASE_URL}/api/design/build-and-deploy`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ projectId }),
-        }
-      );
+      // Choose API endpoint based on project scope
+      const apiEndpoint = scope === "fullstack" 
+        ? `${import.meta.env.VITE_BASE_URL}/api/generate-fullstack/deploy-fullstack`
+        : `${import.meta.env.VITE_BASE_URL}/api/design/build-and-deploy`;
+
+
+      // Prepare request body based on project scope
+      let requestBody: any = { projectId };
+      
+      if (scope === "fullstack" && supabaseConfig) {
+        requestBody = {
+          projectId,
+          supabaseUrl: supabaseConfig.supabaseUrl,
+          supabaseAnonKey: supabaseConfig.supabaseAnonKey,
+          supabaseServiceRoleKey: supabaseConfig.supabaseToken, // Use supabaseToken as service role key
+        };
+      } else {
+      }
+
+      const response = await fetch(apiEndpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(requestBody),
+      });
 
       if (!response.ok) {
-        throw new Error(`🐾 Deployment tripped over a stick! Our pup couldn’t fetch your app this time.`);
+        const errorText = await response.text();
+        throw new Error(`🐾 Deployment tripped over a stick! Our pup couldn't fetch your app this time. Status: ${response.status}`);
       }
 
       const deployedUrl = await response.json();

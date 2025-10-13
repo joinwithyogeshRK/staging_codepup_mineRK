@@ -3,6 +3,7 @@ import { Upload, ImageIcon, FileText, Lightbulb } from "lucide-react";
 import PdfPreview from "./pdfpreview";
 import { validateFile } from "../utils/fileValidation";
 import { useToast } from "../helper/Toast";
+import { extractImagesFromPdf } from "../utils/pdfExtraction";
 
 interface ImageUploadSectionProps {
   selectedImages: File[];
@@ -62,44 +63,44 @@ const ImageUploadSection = ({
         return (
           lower.endsWith(".csv") ||
           lower.endsWith(".md") ||
-          lower.endsWith(".xlsx")
+          lower.endsWith(".xlsx") ||
+          lower.endsWith(".xls") ||
+          lower.endsWith(".txt") ||
+          lower.endsWith(".gif") ||
+          lower.endsWith(".webp") ||
+          lower.endsWith(".svg") ||
+          lower.endsWith(".ico")
         );
       });
 
-      // Check if we have unsupported files (already handled via validateFile). No-op here.
-
       let allImageFiles = [...imageFiles];
 
-      // If any PDFs were selected, notify parent so originals can be uploaded as PDFs
-      if (pdfFiles.length > 0 && typeof setSelectedPdfs === 'function') {
-        setSelectedPdfs((prev: File[]) => {
-          // Deduplicate by name+size to avoid duplicates on repeated selections
-          const existingKeys = new Set(prev.map((f) => `${f.name}:${f.size}`));
-          const toAdd = pdfFiles.filter((f) => !existingKeys.has(`${f.name}:${f.size}`));
-          return [...prev, ...toAdd];
-        });
-      }
-
-      // Keep PDFs as-is for backend; update PDF preview groups (no extraction)
+      // Extract images from PDFs and add them to selectedImages
       if (pdfFiles.length > 0) {
-        if (typeof setSelectedPdfs === 'function') {
-          setSelectedPdfs((prev: File[]) => {
-            const existingKeys = new Set(prev.map((f) => `${f.name}:${f.size}`));
-            const toAdd = pdfFiles.filter((f) => !existingKeys.has(`${f.name}:${f.size}`));
-            return [...prev, ...toAdd];
-          });
-        }
-        // Track for local preview (avoid duplicates)
-        setPdfGroups((prev) => {
-          const updated = { ...prev };
-          for (const pdf of pdfFiles) {
-            const key = pdf.name; // keep key by name for remove compatibility
-            if (!updated[key]) {
-              updated[key] = [pdf];
+        setIsProcessingPdf(true);
+        try {
+          for (const pdfFile of pdfFiles) {
+            const extractionResult = await extractImagesFromPdf(pdfFile, 5, showToast);
+            if (extractionResult) {
+              // Add extracted images to allImageFiles
+              allImageFiles.push(...extractionResult.extractedImages);
+              
+              // Track for local preview (avoid duplicates)
+              setPdfGroups((prev) => {
+                const updated = { ...prev };
+                const key = pdfFile.name;
+                if (!updated[key]) {
+                  updated[key] = [pdfFile];
+                }
+                return updated;
+              });
             }
           }
-          return updated;
-        });
+        } catch (error) {
+          showToast("Failed to extract images from PDF", "error");
+        } finally {
+          setIsProcessingPdf(false);
+        }
       }
 
       // Track other docs (xlsx, md, csv): push to selectedPdfs pathway and keep local list
@@ -239,7 +240,7 @@ const ImageUploadSection = ({
         <input
           type="file"
           multiple
-          accept="image/*,.pdf,.csv,.md,.xlsx"
+          accept="image/*,.pdf,.csv,.md,.xlsx,.xls,.txt,.gif,.webp,.svg,.ico"
           onChange={handleFileSelect}
           className="image-upload-input"
           id="image-upload"
@@ -294,18 +295,12 @@ const ImageUploadSection = ({
 
                 {/* Show other docs (xlsx, md, csv) */}
                 {docFiles.map((doc) => (
-                  <div key={`doc-${doc.name}`} className="image-preview-item flex items-center justify-between px-3 py-2">
-                    <div className="flex items-center gap-2">
-                      <FileText className="w-4 h-4" />
-                      <span className="text-sm truncate max-w-[200px]" title={doc.name}>{doc.name}</span>
-                    </div>
-                    <button
-                      onClick={() => removeDocFile(doc.name)}
-                      className="image-preview-remove"
-                    >
-                      ×
-                    </button>
-                  </div>
+                  <PdfPreview
+                    key={`doc-${doc.name}`}
+                    file={doc}
+                    onRemove={() => removeDocFile(doc.name)}
+                    size="medium"
+                  />
                 ))}
 
                 {/* Show standalone images */}

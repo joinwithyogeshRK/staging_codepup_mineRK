@@ -22,7 +22,6 @@ import axios from "axios";
 import { useAuth, UserButton } from "@clerk/clerk-react";
 import { useChatPageState, useChatPageLogic } from "../../hooks/chatpage_hooks";
 import { v4 as uuidv4 } from "uuid";
-import { uploadFilesToDatabase } from "../../utils/fileUpload";
 import type { ContextValue } from "../../types/index";
 import GitHubModel from "../../components/GithubModel";
 import Credit from "../../components/Credit";
@@ -347,23 +346,8 @@ const ChatPage: React.FC = () => {
     clearSelectedFiles,
     toggleUploadMenu,
   } = logic;
-
-  // Helper function to upload files to database
-  const uploadFilesToDatabaseHelper = useCallback(
-    async (files: File[]) => {
-      if (!files || files.length === 0 || !projectId) return;
-
-      try {
-        const token = await getToken();
-        if (token) {
-          await uploadFilesToDatabase(files, projectId, token);
-        }
-      } catch (error) {
-        // Don't show error to user as this is a background operation
-      }
-    },
-    [projectId, getToken]
-  );
+  // console.log(projectScope);
+  // Removed file upload to database functionality
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -533,7 +517,21 @@ const ChatPage: React.FC = () => {
     try {
       const token = await getToken();
       if (!token) throw new Error("Missing auth token");
-      await startDeployStore(projectId, token);
+      
+      // Get Supabase config for fullstack projects
+      let supabaseConfig = null;
+      if (projectScope === "fullstack") {
+        try {
+          const stored = localStorage.getItem("supabaseConfig");
+          if (stored) {
+            supabaseConfig = JSON.parse(stored);
+          } else {
+          }
+        } catch (error) {
+        }
+      }
+      
+      await startDeployStore(projectId, token, projectScope, supabaseConfig);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown deployment error";
@@ -547,7 +545,7 @@ const ChatPage: React.FC = () => {
       };
       setMessages((prev: any) => [...prev, errorChatMessage]);
     }
-  }, [projectId, getToken, startDeployStore, setMessages]);
+  }, [projectId, getToken, startDeployStore, setMessages, projectScope]);
 
   // Reflect store success into UI (share URL + chat)
   useEffect(() => {
@@ -702,7 +700,6 @@ const ChatPage: React.FC = () => {
           toggleUploadMenu={toggleUploadMenu}
           showDocsInput={showDocsInput}
           setShowDocsInput={setShowDocsInput}
-          uploadFilesToDatabaseHelper={uploadFilesToDatabaseHelper}
           isLoading={isLoading}
           projectStatus={projectStatus}
           isStreamingResponse={isStreamingResponse}

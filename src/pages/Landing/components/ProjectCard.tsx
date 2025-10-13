@@ -14,7 +14,6 @@ import type {
   SessionInfo,
   DesignChoices,
 } from "../components/types/types"; // Adjust path as needed
-import { extractColorsFromDesignChoices } from "../Index"; // Adjust path if extractColorsFromDesignChoices moves
 
 type ProjectCardProps = {
   project: Project;
@@ -68,7 +67,16 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
 
   // Extract colors for the card display
   const cardColors = useMemo(() => {
-    return designChoices ? extractColorsFromDesignChoices(designChoices) : null;
+    if (!designChoices) return null;
+    
+    // Simple color extraction fallback
+    return {
+      primary: designChoices.colorScheme?.primary || designChoices.recommendedColors?.[0] || '#3B82F6',
+      secondary: designChoices.colorScheme?.secondary || designChoices.recommendedColors?.[1] || '#1E40AF',
+      accent: designChoices.colorScheme?.accent || designChoices.recommendedColors?.[2] || '#F59E0B',
+      background: designChoices.colorScheme?.background || '#FFFFFF',
+      text: designChoices.colorScheme?.text || '#1F2937',
+    };
   }, [designChoices]);
 
   return (
