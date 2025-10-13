@@ -1871,39 +1871,98 @@ export const useChatPageLogic = (
             });
 
             const token = await getToken();
-            const backendResponse = await axios.post(
+
+            // Use fetch with streaming to handle SSE events from backend
+            const response = await fetch(
               `${baseUrl}/api/generate-fullstack/generate-flexible-backend`,
               {
-                projectId: projId,
-              },
-              {
+                method: "POST",
                 headers: {
+                  "Content-Type": "application/json",
                   Authorization: `Bearer ${token}`,
                 },
+                body: JSON.stringify({ projectId: projId }),
               }
             );
-            if (!backendResponse.data.success) {
+
+            if (!response.ok) {
               throw new Error(
-                backendResponse.data.error || "Failed to generate backend"
+                `Backend generation failed with status: ${response.status}`
               );
             }
 
-            updateWorkflowStep("Backend Generation", {
-              message: `✅ Generated backend with database schema and ${
-                backendResponse.data.files
-                  ? Object.keys(backendResponse.data.files).length
-                  : 0
-              } files!`,
-              isComplete: true,
-              data: backendResponse.data,
-            });
+            const reader = response.body?.getReader();
+            if (!reader) {
+              throw new Error("No response body from backend generation");
+            }
 
-            WorkflowStateManager.markStageCompleted(
-              projId,
-              "Backend Generation",
-              80
-            );
-            setWorkflowProgress(80);
+            const decoder = new TextDecoder();
+            let buffer = "";
+            let backendCompleted = false;
+            let backendResultData: any = null;
+
+            // Process SSE stream
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split("\n");
+              buffer = lines.pop() || "";
+
+              for (const line of lines) {
+                if (line.startsWith("data: ")) {
+                  try {
+                    const data = JSON.parse(line.slice(6));
+                    console.log("Backend SSE event:", data);
+
+                    // Handle progress events
+                    if (data.type === "progress") {
+                      updateWorkflowStep("Backend Generation", {
+                        message: data.message || "Generating backend...",
+                        isComplete: false,
+                      });
+
+                      // Update progress (40% base + scale progress to 40%)
+                      const backendProgress = 40 + (data.percentage || 0) * 0.4;
+                      setWorkflowProgress(Math.min(backendProgress, 80));
+                    }
+
+                    // Handle result event - THIS IS THE KEY!
+                    if (data.type === "result" && data.result) {
+                      backendCompleted = true;
+                      backendResultData = data.result;
+
+                      console.log("Backend generation completed:", data.result);
+
+                      updateWorkflowStep("Backend Generation", {
+                        message: `✅ Generated backend with database schema and ${
+                          data.result.files
+                            ? Object.keys(data.result.files).length
+                            : 0
+                        } files!`,
+                        isComplete: true,
+                        data: data.result,
+                      });
+
+                      WorkflowStateManager.markStageCompleted(
+                        projId,
+                        "Backend Generation",
+                        80
+                      );
+                      setWorkflowProgress(80);
+                    }
+                  } catch (e) {
+                    console.error("Error parsing backend SSE data:", e);
+                  }
+                }
+              }
+            }
+                        
+            // Verify backend completed successfully
+            if (!backendCompleted || !backendResultData) {
+              throw new Error("Backend generation did not complete successfully");
+            }
 
             await new Promise((resolve) => setTimeout(resolve, 1000));
           } else {

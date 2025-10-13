@@ -51,25 +51,31 @@ const ImageUploadSection = ({
         }
       }
 
+      // Disallow GIF attachments entirely
+      const nonGifAllowedFiles = allowedFiles.filter((file: File) => {
+        const isGif = file.type === "image/gif" || file.name.toLowerCase().endsWith(".gif");
+        if (isGif) {
+          showToast("GIF files are not supported for generation.", "error");
+          return false;
+        }
+        return true;
+      });
+
       // Separate PDFs, images, and other supported docs from allowed files
-      const imageFiles = allowedFiles.filter((file: File) =>
+      const imageFiles = nonGifAllowedFiles.filter((file: File) =>
         file.type.startsWith("image/")
       );
-      const pdfFiles = allowedFiles.filter(
+      const pdfFiles = nonGifAllowedFiles.filter(
         (file: File) => file.type === "application/pdf"
       );
-      const otherDocFiles = allowedFiles.filter((file: File) => {
+      const otherDocFiles = nonGifAllowedFiles.filter((file: File) => {
         const lower = file.name.toLowerCase();
         return (
           lower.endsWith(".csv") ||
           lower.endsWith(".md") ||
           lower.endsWith(".xlsx") ||
           lower.endsWith(".xls") ||
-          lower.endsWith(".txt") ||
-          lower.endsWith(".gif") ||
-          lower.endsWith(".webp") ||
-          lower.endsWith(".svg") ||
-          lower.endsWith(".ico")
+          lower.endsWith(".txt")
         );
       });
 
@@ -240,7 +246,8 @@ const ImageUploadSection = ({
         <input
           type="file"
           multiple
-          accept="image/*,.pdf,.csv,.md,.xlsx,.xls,.txt,.gif,.webp,.svg,.ico"
+          // accept="image/*,.pdf,.csv,.md,.xlsx,.xls,.txt,.webp,.svg"
+          accept=".jpg,.jpeg,.png,.webp,.svg,.pdf,.csv,.md,.xlsx,.xls,.txt"
           onChange={handleFileSelect}
           className="image-upload-input"
           id="image-upload"

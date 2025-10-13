@@ -6,7 +6,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "../../components/ui/dialog";
-import type { UnifiedFileUploadRef } from "../../components/UnifiedFileUpload";
 import React, {
   useContext,
   useEffect,
@@ -59,7 +58,6 @@ const ChatPage: React.FC = () => {
 
   // Tab state for Preview/Code switching
   const [activeTab, setActiveTab] = useState<"preview" | "code">("preview");
-  const docsInputRef = useRef<UnifiedFileUploadRef>(null);
   // Countdown timer state
   const [countdownTime, setCountdownTime] = useState(10 * 60); // 10 minutes in seconds
 

@@ -60,7 +60,6 @@ import {
   Images,
   CreditCard,
 } from "lucide-react";
-// import SupabaseConfigForm from "../form"; // replaced by dialog
 import SupabaseConnection from "@/components/Supabase/SupabaseConnection";
 import ImageUploadSection from "@/components/Image-upload-component";
 import { normalizeDisplayStep } from "./components/utils/displayStepUtils";

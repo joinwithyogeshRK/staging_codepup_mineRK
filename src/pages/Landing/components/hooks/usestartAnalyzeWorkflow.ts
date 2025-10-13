@@ -97,7 +97,7 @@ export function useProjectWorkflow({
         selectedPdfs.forEach((file) => {
           formData.append("images", file);
         });
-        /*// ------- DEBUGGING LOGS ------
+        /* // ------- DEBUGGING LOGS ------
         for (const [key, value] of formData.entries()) {
           if (value instanceof File) {
             console.log(
