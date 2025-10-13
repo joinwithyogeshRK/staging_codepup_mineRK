@@ -6,6 +6,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "../../components/ui/dialog";
+import VersionHistoryWrapper from "../../components/version";
 import React, {
   useContext,
   useEffect,
@@ -365,12 +366,7 @@ const ChatPage: React.FC = () => {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [
-    showUploadMenu,
-    showPublishMenu,
-    showChatPublishMenu,
-    setShowUploadMenu,
-  ]);
+  }, [showUploadMenu, showPublishMenu, showChatPublishMenu, setShowUploadMenu]);
 
   // Watch streaming events for insufficient credits (modification path)
   useEffect(() => {
@@ -466,7 +462,6 @@ const ChatPage: React.FC = () => {
     }
   }, [messages]);
 
-
   // Reset hover state when menu opens/closes
   useEffect(() => {
     if (!showUploadMenu) {
@@ -514,7 +509,7 @@ const ChatPage: React.FC = () => {
     try {
       const token = await getToken();
       if (!token) throw new Error("Missing auth token");
-      
+
       // Get Supabase config for fullstack projects
       let supabaseConfig = null;
       if (projectScope === "fullstack") {
@@ -524,10 +519,9 @@ const ChatPage: React.FC = () => {
             supabaseConfig = JSON.parse(stored);
           } else {
           }
-        } catch (error) {
-        }
+        } catch (error) {}
       }
-      
+
       await startDeployStore(projectId, token, projectScope, supabaseConfig);
     } catch (error) {
       const errorMessage =
@@ -581,7 +575,6 @@ const ChatPage: React.FC = () => {
 
   // Generate cache-busted preview URL
   // Always use raw deploymentUrl without cache busting
-
 
   // Auto-scroll effect (on new messages and key streaming state changes)
   useEffect(() => {
@@ -810,6 +803,22 @@ const ChatPage: React.FC = () => {
 
               {/* Right side: GitHub, Credits, and Share buttons */}
               <div className="flex items-center gap-2 h-8">
+                {projectStatus === "ready" && projectId && (
+                  <VersionHistoryWrapper
+                    projectId={projectId}
+                    onVersionRestored={(versionNumber) => {
+                      // Refresh preview iframe with cache busting
+                      setIframeKey((prev) => prev + 1);
+
+                      // Show success notification
+                      showToast(
+                        `Version ${versionNumber} restored successfully`,
+                        "success"
+                      );
+                    }}
+                  />
+                )}
+
                 {/* GitHub Connect Button - Desktop only */}
                 {projectStatus === "ready" && (
                   <div className="hidden lg:flex items-center h-8">
