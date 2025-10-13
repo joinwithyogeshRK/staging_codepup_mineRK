@@ -985,11 +985,20 @@ export const useChatPageLogic = (
           setStreamingProgress(data.percentage || 0);
           setStreamingPhase(data.phase || "");
           setStreamingMessage(data.message || "");
-
+          /*/ ------------------------------------------------------------
+          // DEBUGGING LOGS:
+          // If data.type is progress, log the message
+          if (data.type === "progress") {
+            console.log(data.message?data.message:"")
+          }
+          // ------------------------------------------------------------ */
           updateWorkflowStep("Frontend Generation", {
-            message: `${data.message} (${(data.percentage || 0).toFixed(0)}%)`,
+            message: `${data.message || "Generating..."} (${(data.percentage || 0).toFixed(0)}%)`,
             isComplete: false,
           });
+
+          // Ensure progress is visible even if phase not matched
+          setShowCodeStream(true);
 
           // Update workflow state progress
 
@@ -1001,14 +1010,7 @@ export const useChatPageLogic = (
             projectScope,
             currentProgress
           );
-
-          if (
-            data.phase === "processing" ||
-            data.phase === "parsing" ||
-            data.phase === "generating"
-          ) {
-            setShowCodeStream(true);
-          } else if (data.phase === "complete") {
+          if (data.phase === "complete") {
             setTimeout(() => {
               if (data.result?.previewUrl) {
                 setShowCodeStream(false);
@@ -1541,22 +1543,23 @@ export const useChatPageLogic = (
           const lines = buffer.split("\n");
           buffer = lines.pop() || "";
 
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              try {
-                const data: StreamingProgressData = JSON.parse(line.slice(6));
-
-                // Process streaming data with proper throttling
+          // Parse SSE and forward progress/result immediately; throttle only chunk
+          for (const rawLine of lines) {
+            const line = rawLine.trim();
+            if (!line || !line.startsWith("data:")) continue;
+            try {
+              const data: StreamingProgressData = JSON.parse(line.slice(5).trim());
+              if (data.type === "progress" || data.type === "result") {
+                handleStreamingData(data, projId);
+                continue;
+              }
+              if (data.type === "chunk") {
                 chunkCount++;
-                if (
-                  chunkCount % 2 === 0 ||
-                  data.type === "chunk" ||
-                  data.type === "result"
-                ) {
+                if (chunkCount % 2 === 0) {
                   handleStreamingData(data, projId);
                 }
-              } catch (e) {}
-            }
+              }
+            } catch (e) {}
           }
 
           // Performance throttling
@@ -1781,6 +1784,12 @@ export const useChatPageLogic = (
               projectScope,
               75
             );
+            // Ensure a visible step message exists so progress updates render in chat
+            addWorkflowStep({
+              step: "Frontend Generation",
+              message: "Starting frontend generation...",
+              isComplete: false,
+            });
 
             await startStreamingFrontendGeneration(projId);
 

@@ -289,7 +289,13 @@ function SupabaseConnection({
             </ol>
 
             <button
-              onClick={() => setShowProjectLimitGuide(false)}
+              onClick={() => {
+                setShowProjectLimitGuide(false);
+                // Wait a moment to let dialog close visually, then retry
+                setTimeout(() => {
+                  submit().catch(() => {});
+                }, 300);
+              }}
               className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 rounded-lg transition-all"
             >
               Done, Retry Connection
@@ -437,13 +443,6 @@ function SupabaseConnection({
         </div>
 
         <DialogFooter className="flex items-center justify-between">
-          <a
-            href="https://supabase.com/docs"
-            target="_blank"
-            className="text-sm text-gray-500 hover:text-gray-700"
-          >
-            Supabase Docs
-          </a>
           <button
             onClick={() => onOpenChange(false)}
             className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
