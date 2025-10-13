@@ -1465,7 +1465,6 @@ export const useChatPageLogic = (
             effectiveSupabaseConfig.databaseUrl = data.databaseUrl;
             effectiveSupabaseConfig.supabaseUrl = data.supabaseurl;
           } catch (err) {
-            console.error("Unable to fetch project details", err)  
           }
         
         const supabaseAccessToken =
@@ -1507,7 +1506,7 @@ export const useChatPageLogic = (
 
         const token = await getToken();
         //// ------ DEBUGGING ------
-        console.log("front-of-flexible-backend's BODY --->", requestBody);
+        // console.log("front-of-flexible-backend's BODY --->", requestBody);
         //// ------------
         const response = await fetch(`${baseUrl}${apiRoute}`, {
           method: "POST",

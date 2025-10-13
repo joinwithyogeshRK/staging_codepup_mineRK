@@ -68,7 +68,7 @@ async function validatePdfFile(file: File): Promise<boolean | string> {
     return true;
   } catch (error) {
     // If we can't validate the PDF, allow it but log the error
-    console.warn("Could not validate PDF page count:", error);
+    // console.warn("Could not validate PDF page count:", error);
     return true; // Allow the file if validation fails
   }
 }

@@ -96,7 +96,7 @@ const PdfPreview: React.FC<PdfPreviewProps> = ({
           flex items-center 
           justify-center
           transition-all duration-200
-          opacity-0 group-hover:opacity-100
+          opacity-100 group-hover:opacity-100
           hover:scale-110
           z-10
           shadow-sm

@@ -6,7 +6,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "../../components/ui/dialog";
-import type { UnifiedFileUploadRef } from "../../components/UnifiedFileUpload";
+import VersionHistoryWrapper from "../../components/version";
 import React, {
   useContext,
   useEffect,
@@ -59,7 +59,6 @@ const ChatPage: React.FC = () => {
 
   // Tab state for Preview/Code switching
   const [activeTab, setActiveTab] = useState<"preview" | "code">("preview");
-  const docsInputRef = useRef<UnifiedFileUploadRef>(null);
   // Countdown timer state
   const [countdownTime, setCountdownTime] = useState(10 * 60); // 10 minutes in seconds
 
@@ -367,12 +366,7 @@ const ChatPage: React.FC = () => {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [
-    showUploadMenu,
-    showPublishMenu,
-    showChatPublishMenu,
-    setShowUploadMenu,
-  ]);
+  }, [showUploadMenu, showPublishMenu, showChatPublishMenu, setShowUploadMenu]);
 
   // Watch streaming events for insufficient credits (modification path)
   useEffect(() => {
@@ -468,7 +462,6 @@ const ChatPage: React.FC = () => {
     }
   }, [messages]);
 
-
   // Reset hover state when menu opens/closes
   useEffect(() => {
     if (!showUploadMenu) {
@@ -503,9 +496,6 @@ const ChatPage: React.FC = () => {
     }
     amplitude.track("Publish Button Clicked");
 
-    console.log("Deploying project with scope:", projectScope);
-    console.log("Project ID:", projectId);
-
     // Add deployment message to chat once
     const deployMessage = {
       id: uuidv4(),
@@ -519,7 +509,7 @@ const ChatPage: React.FC = () => {
     try {
       const token = await getToken();
       if (!token) throw new Error("Missing auth token");
-      
+
       // Get Supabase config for fullstack projects
       let supabaseConfig = null;
       if (projectScope === "fullstack") {
@@ -527,21 +517,15 @@ const ChatPage: React.FC = () => {
           const stored = localStorage.getItem("supabaseConfig");
           if (stored) {
             supabaseConfig = JSON.parse(stored);
-            console.log("Using Supabase config for fullstack deployment:", supabaseConfig);
           } else {
-            console.warn("No Supabase config found in localStorage for fullstack project");
           }
-        } catch (error) {
-          console.error("Failed to parse stored Supabase config:", error);
-        }
+        } catch (error) {}
       }
-      
-      console.log("Calling startDeployStore with:", { projectId, token: "***", projectScope, supabaseConfig });
+
       await startDeployStore(projectId, token, projectScope, supabaseConfig);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown deployment error";
-      console.error("Deployment error:", errorMessage);
       showToast(`${errorMessage}`, "error");
       const errorChatMessage = {
         id: uuidv4(),
@@ -591,7 +575,6 @@ const ChatPage: React.FC = () => {
 
   // Generate cache-busted preview URL
   // Always use raw deploymentUrl without cache busting
-
 
   // Auto-scroll effect (on new messages and key streaming state changes)
   useEffect(() => {
@@ -820,6 +803,22 @@ const ChatPage: React.FC = () => {
 
               {/* Right side: GitHub, Credits, and Share buttons */}
               <div className="flex items-center gap-2 h-8">
+                {projectStatus === "ready" && projectId && (
+                  <VersionHistoryWrapper
+                    projectId={projectId}
+                    onVersionRestored={(versionNumber) => {
+                      // Refresh preview iframe with cache busting
+                      setIframeKey((prev) => prev + 1);
+
+                      // Show success notification
+                      showToast(
+                        `Version ${versionNumber} restored successfully`,
+                        "success"
+                      );
+                    }}
+                  />
+                )}
+
                 {/* GitHub Connect Button - Desktop only */}
                 {projectStatus === "ready" && (
                   <div className="hidden lg:flex items-center h-8">

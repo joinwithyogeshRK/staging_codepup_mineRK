@@ -30,7 +30,6 @@ export const useDeployStore = create<DeployState>((set, get) => ({
   deployedUrl: undefined,
 
   startDeploy: async (projectId: number, token: string, scope?: string, supabaseConfig?: SupabaseConfig) => {
-    console.log("DeployStore: Starting deployment with:", { projectId, scope, supabaseConfig });
     set({ projectId, phase: "deploying", isDeploying: true, error: undefined });
 
     try {
@@ -39,7 +38,6 @@ export const useDeployStore = create<DeployState>((set, get) => ({
         ? `${import.meta.env.VITE_BASE_URL}/api/generate-fullstack/deploy-fullstack`
         : `${import.meta.env.VITE_BASE_URL}/api/design/build-and-deploy`;
 
-      console.log("DeployStore: Using API endpoint:", apiEndpoint);
 
       // Prepare request body based on project scope
       let requestBody: any = { projectId };
@@ -51,12 +49,9 @@ export const useDeployStore = create<DeployState>((set, get) => ({
           supabaseAnonKey: supabaseConfig.supabaseAnonKey,
           supabaseServiceRoleKey: supabaseConfig.supabaseToken, // Use supabaseToken as service role key
         };
-        console.log("DeployStore: Fullstack request body:", requestBody);
       } else {
-        console.log("DeployStore: Frontend request body:", requestBody);
       }
 
-      console.log("DeployStore: Making request to:", apiEndpoint);
       const response = await fetch(apiEndpoint, {
         method: "POST",
         headers: {
@@ -66,15 +61,12 @@ export const useDeployStore = create<DeployState>((set, get) => ({
         body: JSON.stringify(requestBody),
       });
 
-      console.log("DeployStore: Response status:", response.status);
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("DeployStore: Error response:", errorText);
         throw new Error(`🐾 Deployment tripped over a stick! Our pup couldn't fetch your app this time. Status: ${response.status}`);
       }
 
       const deployedUrl = await response.json();
-      console.log("DeployStore: Deployment successful, URL:", deployedUrl);
 
       set({
         deployedUrl,
@@ -84,7 +76,6 @@ export const useDeployStore = create<DeployState>((set, get) => ({
       });
 
     } catch (err) {
-      console.error("DeployStore: Deployment error:", err);
       set({
         error: err instanceof Error ? err.message : "Unknown deployment error",
         phase: "error",

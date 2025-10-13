@@ -60,7 +60,6 @@ import {
   Images,
   CreditCard,
 } from "lucide-react";
-// import SupabaseConfigForm from "../form"; // replaced by dialog
 import SupabaseConnection from "@/components/Supabase/SupabaseConnection";
 import ImageUploadSection from "@/components/Image-upload-component";
 import { normalizeDisplayStep } from "./components/utils/displayStepUtils";
@@ -351,6 +350,7 @@ const Index = () => {
 
     amplitude.track("Blue Generate button");
 
+    /*
     console.log("Generate button clicked with:", {
       selectedProjectType,
       supabaseConfig,
@@ -359,6 +359,7 @@ const Index = () => {
       workflowActive,
       prompt: prompt.trim()
     });
+    */
 
     // if (
     //   selectedProjectType === "fullstack" &&
@@ -368,11 +369,8 @@ const Index = () => {
     //   setShowProjectTypeSelector(true);
     //   return;
     // }
-    console.log("Supabase COnfig -->", supabaseConfig);
-    console.log("Supabase isconfigvalid --->", isConfigValid);
 
     if (currentProjectId && !workflowActive && prompt.trim()) {
-      console.log("Starting workflow for project:", currentProjectId);
       setWorkflowActive(true);
       await startAnalyzeWorkflow(currentProjectId, prompt);
       // Clear files after starting workflow to prevent re-upload
@@ -382,7 +380,6 @@ const Index = () => {
     }
 
     if (workflowActive && currentProjectId && prompt.trim()) {
-      console.log("Continuing workflow for project:", currentProjectId);
       await startAnalyzeWorkflow(currentProjectId, prompt);
       // Clear files after continuing workflow to prevent re-upload
       setSelectedImages([]);
@@ -747,40 +744,7 @@ const Index = () => {
           transition={{ duration: 0.8, delay: 0.2 }}
           className="header-container"
         >
-          {/* Content only visible when signed in */}
-          <SignedIn>
-            {selectedProjectType === "fullstack" && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.3, delay: 0.5 }}
-              >
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setShowSupabaseConfig(true)}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-all duration-200 ${
-                    isConfigValid
-                      ? "bg-green-500/10 border-green-500/20 text-green-400 hover:bg-green-500/20"
-                      : "bg-orange-500/10 border-orange-500/20 text-orange-400 hover:bg-orange-500/20"
-                  }`}
-                  title={
-                    isConfigValid ? "Supabase configured" : "Configure Supabase"
-                  }
-                >
-                  <Database className="w-4 h-4" />
-                  <span className="hidden sm:inline">
-                    {isConfigValid ? "Backend Ready" : "Setup Backend"}
-                  </span>
-                  <div
-                    className={`w-2 h-2 rounded-full ${
-                      isConfigValid ? "bg-green-500" : "bg-orange-500"
-                    }`}
-                  ></div>
-                </motion.button>
-              </motion.div>
-            )}
-          </SignedIn>
+          
 
           {/* Gallery link - visible to all users */}
           <Link
@@ -1149,6 +1113,9 @@ const Index = () => {
       <SupabaseConnection
         open={showSupabaseConfig}
         onOpenChange={setShowSupabaseConfig}
+        // Prefer token from user payload (DB), fallback to localStorage
+        defaultAccessToken={(userPayload as any)?.supabaseToken || localStorage.getItem("supabaseAccessToken") || undefined}
+        autoSubmit={true}
         onSelect={async (payloadString: string) => {
           try {
             const token = await getToken();
@@ -1183,7 +1150,6 @@ const Index = () => {
               token,
               baseUrl: BASE_URL,
             });
-            console.log("Created fullstack project:", newProject);
             setProjects((prev) => [newProject, ...prev]);
             setCurrentProjectId(newProject.id);
             setShowProjectTypeSelector(false);
