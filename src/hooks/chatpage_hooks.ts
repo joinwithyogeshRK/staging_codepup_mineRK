@@ -2679,7 +2679,7 @@ export const useChatPageLogic = (
           }
 
           // Add user message if we have navPrompt (from navigation state)
-          if (navPrompt) {
+          /* if (navPrompt) {
             const userMessage: Message = {
               id: `user-${Date.now()}`,
               content: navPrompt,
@@ -2701,7 +2701,7 @@ export const useChatPageLogic = (
                 "Complete the application generation based on the design choices from the design process.";
               await startCompleteWorkflow(genericPrompt, projectId);
             }, 500);
-          }
+          }*/
         } else if (existingProject && projectId) {
           // **FIX**: Only clear stale workflow state for non-completed projects
           const existingState = WorkflowStateManager.load(projectId);
