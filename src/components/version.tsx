@@ -140,7 +140,7 @@ const VersionHistoryModal: React.FC<VersionHistoryModalProps> = ({
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <button
-          className="flex items-center justify-center w-8 h-8 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-all duration-200"
+          className="hidden lex items-center justify-center w-8 h-8 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-all duration-200"
           title="Version History"
           aria-label="Open version history"
         >

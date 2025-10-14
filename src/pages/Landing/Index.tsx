@@ -78,6 +78,7 @@ import { useEvaluateRewards } from "./components/hooks/useEvaluateRewards";
 import AnimatedTitle from "./components/AnimatedTitle";
 import { encodeId, decodeId } from "@/utils/hashids";
 import PrizeModel, { usePrizeModal } from "@/components/PrizeModel";
+import { useSupabaseCredentialsStore } from "@/store/supabaseCredentials";
 
 // --- Constants ---
 const BASE_URL = import.meta.env.VITE_BASE_URL;
@@ -137,6 +138,7 @@ const Index = () => {
   const { showToast } = useToast();
   const navigate = useNavigate();
   const { user: clerkUser, isLoaded } = useUser();
+  const { supabaseAccessToken } = useSupabaseCredentialsStore();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { getToken } = useAuth();
   const [credits, setCredits] = useState<number | null>(null);
@@ -146,24 +148,6 @@ const Index = () => {
   const [didSyncUser, setDidSyncUser] = useState<boolean>(false);
   const [creditsRetryCount, setCreditsRetryCount] = useState<number>(0);
   const MAX_CREDITS_RETRIES = 5;
-  // Load Supabase config from localStorage on mount
-  useEffect(() => {
-    const stored = localStorage.getItem("supabaseConfig");
-    if (stored) {
-      try {
-        const config = JSON.parse(stored);
-        setSupabaseConfig(config);
-        setIsConfigValid(true);
-      } catch (error) {}
-    }
-  }, []);
-
-  // Handle Supabase config submission
-  const handleSupabaseConfigSubmit = useCallback((config: SupabaseConfig) => {
-    setSupabaseConfig(config);
-    setIsConfigValid(true);
-    localStorage.setItem("supabaseConfig", JSON.stringify(config));
-  }, []);
 
   // Check backend capabilities
   const checkBackendCapabilities = useCallback(async () => {
@@ -1113,8 +1097,8 @@ const Index = () => {
       <SupabaseConnection
         open={showSupabaseConfig}
         onOpenChange={setShowSupabaseConfig}
-        // Prefer token from user payload (DB), fallback to localStorage
-        defaultAccessToken={(userPayload as any)?.supabaseToken || localStorage.getItem("supabaseAccessToken") || undefined}
+        // Prefer token from user payload (DB)
+        defaultAccessToken={(userPayload as any)?.supabaseToken || supabaseAccessToken || undefined}
         autoSubmit={true}
         onSelect={async (payloadString: string) => {
           try {
