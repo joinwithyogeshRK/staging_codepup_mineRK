@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect, use } from "react";
 import { useLocation } from "react-router-dom";
+import { useSupabaseCredentialsStore } from "@/store/supabaseCredentials";
 import axios from "axios";
 import { useAuth } from "@clerk/clerk-react";
 import { StreamingCodeParser } from "../pages/streaming";
@@ -297,6 +298,10 @@ export const useChatPageLogic = (
   } = (location.state as LocationState) || {};
 
   const baseUrl = import.meta.env.VITE_BASE_URL;
+  const supabaseCreds = useSupabaseCredentialsStore.getState();
+
+  // Guard to prevent duplicate auto-start/user messages on navigation
+  const hasAutoStartedWorkflowRef = useRef(false);
 
   // Centralized credits fetcher
   // NOTE: Replace the endpoint/shape with your real API.
@@ -1435,9 +1440,6 @@ export const useChatPageLogic = (
       });
 
       try {
-        if (projectScope === "fullstack" && !supabaseConfig) {
-          throw new Error("Supabase configuration is missing");
-        }
 
         // 🔥 CHOOSE ROUTE BASED ON SCOPE
         const apiRoute =
@@ -1445,9 +1447,12 @@ export const useChatPageLogic = (
             ? "/api/design/generateFrontendOnly" // Frontend-only route
             : "/api/generate-fullstack/generate-frontend-with-flexible-backend"; // Fullstack route (main + admin)
 
-        // Only require supabaseConfig for fullstack projects and validate all fields
-        let effectiveSupabaseConfig = supabaseConfig as any;
-        effectiveSupabaseConfig.supabaseToken = localStorage.getItem("supabaseAccessToken");
+        // Build a safe effective config without mutating possibly undefined
+        let effectiveSupabaseConfig: any = {
+          ...(supabaseConfig || {}),
+        };
+        // Prefer in-memory store for token
+        effectiveSupabaseConfig.supabaseToken = supabaseCreds.supabaseAccessToken || "";
           if (!projectId || !clerkId) return;
           try {
             const token = await getToken();
@@ -1469,25 +1474,9 @@ export const useChatPageLogic = (
           } catch (err) {
           }
         
-        const supabaseAccessToken =
-          effectiveSupabaseConfig?.supabaseToken ||
-          localStorage.getItem("supabaseAccessToken") ||
-          localStorage.getItem("supabaseToken") ||
-          "";
+        const supabaseAccessToken = effectiveSupabaseConfig?.supabaseToken || "";
 
-        if (projectScope === "fullstack") {
-          const hasAll = Boolean(
-            effectiveSupabaseConfig?.supabaseUrl?.trim() &&
-              effectiveSupabaseConfig?.supabaseAnonKey?.trim() &&
-              (effectiveSupabaseConfig?.databaseUrl?.trim() || "") !== undefined &&
-              supabaseAccessToken?.trim()
-          );
-          if (!hasAll) {
-            throw new Error(
-              "All Supabase configuration fields are required (supabaseUrl, supabaseAnonKey, supabaseToken, databaseUrl)"
-            );
-          }
-        }
+        // For fullstack, don't block here; backend will validate and we fetch project credentials above
 
         // Prepare request body based on project scope
         const requestBody = {
@@ -1656,18 +1645,7 @@ export const useChatPageLogic = (
         return;
       }
 
-      // Only require supabaseConfig for fullstack projects
-      if (
-        projectScope === "fullstack" &&
-        (!supabaseConfig ||
-          !supabaseConfig.supabaseUrl?.trim() ||
-          !supabaseConfig.supabaseAnonKey?.trim())
-      ) {
-        setError(
-          "Supabase configuration is missing. Please ensure backend is properly configured."
-        );
-        return;
-      }
+      // For fullstack, allow missing supabaseConfig here; it will be fetched on-demand
 
       resetStreamingState();
 
@@ -1978,7 +1956,7 @@ export const useChatPageLogic = (
             setWorkflowProgress(80);
           }
 
-          // Step 3: Frontend Generation with DB Sync (100% progress)
+      // Step 3: Frontend Generation with DB Sync (100% progress)
           if (shouldRunFrontendGeneration) {
             WorkflowStateManager.setCurrentStage(
               projId,
@@ -1998,8 +1976,8 @@ export const useChatPageLogic = (
 
 
 
-            const supabaseAccessToken =
-              localStorage.getItem("supabaseAccessToken") || "";
+            // Token already provided via in-memory store in startStreamingFrontendGeneration
+            const supabaseAccessToken = supabaseCreds.supabaseAccessToken || "";
             // console.log("Supabase Access Token:", supabaseAccessToken);
             // console.log("Supabase url:", supabaseConfig.supabaseUrl);
             // console.log("Supabase anon:", supabaseConfig.supabaseAnonKey);
@@ -2700,7 +2678,7 @@ export const useChatPageLogic = (
             }
           }
 
-          // Add user message if we have navPrompt
+          // Add user message if we have navPrompt (from navigation state)
           if (navPrompt) {
             const userMessage: Message = {
               id: `user-${Date.now()}`,
@@ -2708,26 +2686,19 @@ export const useChatPageLogic = (
               type: "user",
               timestamp: new Date(),
             };
-            setMessages([userMessage]);
+            setMessages((prev) => [...prev, userMessage]);
 
             // Small delay to let the UI update, then start workflow
             setTimeout(async () => {
+              hasAutoStartedWorkflowRef.current = true;
               await startCompleteWorkflow(navPrompt, projectId);
             }, 500);
           } else {
-            // If no prompt, create a generic one for workflow completion
-            const genericPrompt =
-              "Complete the application generation based on the design choices from the design process.";
-            const userMessage: Message = {
-              id: `user-${Date.now()}`,
-              content:
-                "Completing application generation from design process...",
-              type: "user",
-              timestamp: new Date(),
-            };
-            setMessages([userMessage]);
-
+            // If no prompt, start workflow silently without injecting generic user message
             setTimeout(async () => {
+              hasAutoStartedWorkflowRef.current = true;
+              const genericPrompt =
+                "Complete the application generation based on the design choices from the design process.";
               await startCompleteWorkflow(genericPrompt, projectId);
             }, 500);
           }
@@ -2776,25 +2747,19 @@ export const useChatPageLogic = (
       fromWorkflow &&
       projectId &&
       !isWorkflowActive &&
-      !isStreamingGeneration
+      !isStreamingGeneration &&
+      !hasAutoStartedWorkflowRef.current &&
+      projectStatus !== "ready" &&
+      (workflowSteps.length === 0 || streamingProgress < 100) &&
+      !isLoading
     ) {
-      // Check if we haven't started a workflow yet
-      if (workflowSteps.length === 0 && !isLoading) {
-        const genericPrompt =
-          "Complete the application generation based on the design choices.";
-        const userMessage: Message = {
-          id: `user-delayed-${Date.now()}`,
-          content: "Completing application generation from design process...",
-          type: "user",
-          timestamp: new Date(),
-        };
-
-        setMessages((prev) => [...prev, userMessage]);
-
-        setTimeout(async () => {
-          await startCompleteWorkflow(genericPrompt, projectId);
-        }, 1000);
-      }
+      // Start (or resume) without injecting generic user message
+      const genericPrompt =
+        "Complete the application generation based on the design choices.";
+      hasAutoStartedWorkflowRef.current = true;
+      setTimeout(async () => {
+        await startCompleteWorkflow(genericPrompt, projectId);
+      }, 500);
     }
   }, [
     fromWorkflow,
@@ -2804,6 +2769,8 @@ export const useChatPageLogic = (
     workflowSteps.length,
     isLoading,
     hasUserStopped,
+    projectStatus,
+    streamingProgress,
   ]);
   // Close upload menu when clicking outside
   useEffect(() => {

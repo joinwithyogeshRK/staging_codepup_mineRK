@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { useAuth, useUser } from "@clerk/clerk-react";
+import { useSupabaseCredentialsStore } from "@/store/supabaseCredentials";
 import {
   Dialog,
   DialogContent,
@@ -39,6 +40,7 @@ function SupabaseConnection({
   const API_BASE_URL = import.meta.env.VITE_BASE_URL;
   const { getToken } = useAuth();
   const { user } = useUser();
+  const { setAccessToken: setAccessTokenInStore, setProjectCredentials } = useSupabaseCredentialsStore();
 
   const submit = async () => {
     setError(null);
@@ -78,8 +80,8 @@ function SupabaseConnection({
         throw new Error(data?.error || "Failed to connect with Supabase");
       }
 
-      // Save token for later usage
-      localStorage.setItem("supabaseAccessToken", accessToken);
+      // Save token in memory store
+      setAccessTokenInStore(accessToken);
 
       try {
         await axios.post(
@@ -109,14 +111,12 @@ function SupabaseConnection({
       );
       setSuccess({ ok: true });
 
-      // Store config
-      const supabaseConfig = {
+      // Store project credentials in memory store
+      setProjectCredentials({
         supabaseUrl: data.supabaseProject.credentials.supabaseUrl,
         supabaseAnonKey: data.supabaseProject.credentials.supabaseAnonKey,
-        supabaseToken: accessToken,
         databaseUrl: data.supabaseProject.credentials.databaseUrl,
-      };
-      localStorage.setItem("supabaseConfig", JSON.stringify(supabaseConfig));
+      });
 
       // Continue automatically
       const payloadString = JSON.stringify({

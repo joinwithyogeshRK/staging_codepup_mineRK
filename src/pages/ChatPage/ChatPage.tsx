@@ -33,6 +33,7 @@ import ChatSection from "./component/ChatSection";
 import PreviewContent from "./component/PreviewSection";
 import { useDeployStore } from "@/store/deployAndPublish/deployAndPublishstore";
 import ShareSection from "./component/ShareSection";
+import { useSupabaseCredentialsStore } from "@/store/supabaseCredentials";
 
 const ChatPage: React.FC = () => {
   const context = useContext(MyContext);
@@ -344,6 +345,7 @@ const ChatPage: React.FC = () => {
     clearSelectedFiles,
     toggleUploadMenu,
   } = logic;
+  const supabaseCreds = useSupabaseCredentialsStore();
   // console.log(projectScope);
   // Removed file upload to database functionality
 
@@ -513,13 +515,19 @@ const ChatPage: React.FC = () => {
       // Get Supabase config for fullstack projects
       let supabaseConfig = null;
       if (projectScope === "fullstack") {
-        try {
-          const stored = localStorage.getItem("supabaseConfig");
-          if (stored) {
-            supabaseConfig = JSON.parse(stored);
-          } else {
-          }
-        } catch (error) {}
+        // Provide available creds from in-memory store (if present)
+        if (
+          supabaseCreds.supabaseUrl &&
+          supabaseCreds.supabaseAnonKey &&
+          supabaseCreds.supabaseAccessToken
+        ) {
+          supabaseConfig = {
+            supabaseUrl: supabaseCreds.supabaseUrl,
+            supabaseAnonKey: supabaseCreds.supabaseAnonKey,
+            supabaseToken: supabaseCreds.supabaseAccessToken,
+            databaseUrl: supabaseCreds.databaseUrl || "",
+          } as any;
+        }
       }
 
       await startDeployStore(projectId, token, projectScope, supabaseConfig);
@@ -567,16 +575,6 @@ const ChatPage: React.FC = () => {
     }
   }, [deployErrorStore, setMessages]);
 
-  // Enhanced cache-busting URL generator
-  // Removed cache-busting URL helper
-
-  // Multiple iframe refresh techniques
-  // Removed forceIframeRefresh and cache-busting logic
-
-  // Generate cache-busted preview URL
-  // Always use raw deploymentUrl without cache busting
-
-  // Auto-scroll effect (on new messages and key streaming state changes)
   useEffect(() => {
     scrollToBottom();
   }, [

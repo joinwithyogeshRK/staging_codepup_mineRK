@@ -2,6 +2,7 @@
 import { useCallback } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "@/helper/Toast";
 import type {
   DbUser,
   Project,
@@ -51,23 +52,14 @@ export function useProjectWorkflow({
   BASE_URL,
 }: UseProjectWorkflowParams) {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const startAnalyzeWorkflow = useCallback(
     async (projectId: number, userPrompt: string) => {
       setWorkflowActive(true);
       setIsLoading(true);
-      const supabaseDetails = localStorage.getItem("supabaseConfig");
-      const supabaseArgs = JSON.parse(supabaseDetails || "");
+      
       try {
         const token = await getToken();
-        const stored = localStorage.getItem("supabaseConfig");
-        if (stored) {
-          try {
-            const config = JSON.parse(stored);
-            //@ts-ignore
-            if (config) setSupabaseConfig(config);
-            // else setSupabaseConfig()
-          } catch (error) {}
-        }
 
         const formData = new FormData();
         formData.append("prompt", userPrompt);
@@ -83,11 +75,6 @@ export function useProjectWorkflow({
         const currentProject = projects.find((p) => p.id === projectId);
         if (currentProject?.name) {
           formData.append("projectName", currentProject.name);
-        }
-
-        // Add Supabase config to formData if available
-        if (stored) {
-          formData.append("supabaseConfig", stored);
         }
 
         // Send both raw images and PDFs directly
@@ -149,13 +136,27 @@ export function useProjectWorkflow({
               existingProject: true,
               clerkId: dbUser!.clerkId,
               userId: dbUser!.id,
-              supabaseConfig: supabaseArgs,
+              // Pass the original user prompt so ChatPage can display it as the first user message
+              prompt: userPrompt,
               fromWorkflow: true,
               scope: projectScope,
             },
           });
+        } else {
+          // Non-success response handling
+          showToast(
+            "🐾 Oops! Our pup lost the scent while fetching your design. Please try again soon.",
+            "error"
+          );
+          setWorkflowActive(false);
         }
       } catch (error) {
+        // Any network/axios error
+        showToast(
+          "🐶 Ruff! Something spooked our pup while fetching your design. Give it another try in a moment.",
+          "error"
+        );
+        setWorkflowActive(false);
       } finally {
         setIsLoading(false);
       }
