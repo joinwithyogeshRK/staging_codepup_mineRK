@@ -18,7 +18,7 @@ import { MyContext } from "../../context/FrontendStructureContext";
 
 import { StreamingCodeDisplay, FileCompletionTracker } from "../streaming";
 import axios from "axios";
-import { useAuth, UserButton } from "@clerk/clerk-react";
+import { useAuth, UserButton, useUser } from "@clerk/clerk-react";
 import { useChatPageState, useChatPageLogic } from "../../hooks/chatpage_hooks";
 import { v4 as uuidv4 } from "uuid";
 import type { ContextValue } from "../../types/index";
@@ -321,6 +321,7 @@ const ChatPage: React.FC = () => {
     isStreamingModification,
   ]);
   const { getToken } = useAuth();
+  const { user: clerkUser } = useUser();
   const {
     // Functions
     scrollToBottom,
@@ -530,7 +531,7 @@ const ChatPage: React.FC = () => {
         }
       }
 
-      await startDeployStore(projectId, token, projectScope, supabaseConfig);
+      await startDeployStore(projectId, token, clerkUser?.id || "", projectScope, supabaseConfig);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown deployment error";
