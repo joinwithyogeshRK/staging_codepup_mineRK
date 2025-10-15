@@ -619,7 +619,7 @@ const ChatSection: React.FC<ChatSectionProps> = ({
                 isDeploying ||
                 isAgentActivating
               }
-              maxLength={5000}
+              maxLength={10000}
             />
           </div>
 
@@ -719,7 +719,7 @@ const ChatSection: React.FC<ChatSectionProps> = ({
                 </>
               )}
             </span>
-            <span>{prompt.length}/5000</span>
+            <span>{prompt.length}/10000</span>
           </div>
         </div>
       </div>
