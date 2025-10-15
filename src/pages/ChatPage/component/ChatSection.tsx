@@ -161,6 +161,16 @@ const ChatSection: React.FC<ChatSectionProps> = ({
   const { showToast: globalShowToast } = useToast();
   const notify = showToast || globalShowToast;
 
+  // Ref for auto-resizing textarea so we can reset height after send
+  const textAreaRef = React.useRef<HTMLTextAreaElement | null>(null);
+
+  // When prompt is cleared by parent after send, collapse textarea height
+  React.useEffect(() => {
+    if (!prompt && textAreaRef.current) {
+      textAreaRef.current.style.height = "";
+    }
+  }, [prompt]);
+
   return (
     <div
       className={`sidebar transition-all duration-300 ease-out flex flex-col ${
@@ -575,6 +585,7 @@ const ChatSection: React.FC<ChatSectionProps> = ({
           {/* Part 1: Input Field (Full Width) */}
           <div className="chat-input-field-section">
             <textarea
+              ref={textAreaRef}
               className="chat-textarea"
               value={prompt}
               onChange={handlePromptChange}
@@ -668,6 +679,10 @@ const ChatSection: React.FC<ChatSectionProps> = ({
                     !isStreamingModification
                   ) {
                     handleSubmit();
+                    // Immediately reset textarea height so UI collapses back
+                    if (textAreaRef.current) {
+                      textAreaRef.current.style.height = "";
+                    }
                   }
                 }}
                 disabled={
