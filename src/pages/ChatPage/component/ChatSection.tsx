@@ -205,7 +205,7 @@ const ChatSection: React.FC<ChatSectionProps> = ({
             {projectStatus === "ready" && projectId && (
               <div className="hidden lg:flex items-center h-8">
                 <button
-                  className="lex items-center justify-center w-8 h-8 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-all duration-200"
+                  className="flex items-center justify-center w-8 h-8 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-all duration-200"
                   title="Version History"
                   aria-label="Open version history"
                   onClick={() => setShowVersionHistory((v) => !v)}
