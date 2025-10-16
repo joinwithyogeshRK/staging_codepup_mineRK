@@ -1,4 +1,5 @@
 import React from "react";
+import { VersionHistoryPanel } from "../../../components/version";
 import {
   Loader2,
   Code,
@@ -13,6 +14,7 @@ import {
   CheckCircle,
   Globe,
   Paperclip,
+  Clock,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -103,6 +105,7 @@ interface ChatSectionProps {
   setShowPublishMenu: React.Dispatch<React.SetStateAction<boolean>>;
   handleDeploy: () => void;
   canDeploy: boolean | number | undefined;
+  onVersionRestored?: (versionNumber: number) => void;
 }
 
 const ChatSection: React.FC<ChatSectionProps> = ({
@@ -157,9 +160,11 @@ const ChatSection: React.FC<ChatSectionProps> = ({
   setShowPublishMenu,
   handleDeploy,
   canDeploy,
+  onVersionRestored,
 }) => {
   const { showToast: globalShowToast } = useToast();
   const notify = showToast || globalShowToast;
+  const [showVersionHistory, setShowVersionHistory] = React.useState(false);
 
   // Ref for auto-resizing textarea so we can reset height after send
   const textAreaRef = React.useRef<HTMLTextAreaElement | null>(null);
@@ -196,6 +201,19 @@ const ChatSection: React.FC<ChatSectionProps> = ({
             </Link>
           </div>
           <div className="flex items-center gap-2 h-8">
+            {/* Version History - Move here before shrink toggle */}
+            {projectStatus === "ready" && projectId && (
+              <div className="hidden lg:flex items-center h-8">
+                <button
+                  className="lex items-center justify-center w-8 h-8 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-all duration-200"
+                  title="Version History"
+                  aria-label="Open version history"
+                  onClick={() => setShowVersionHistory((v) => !v)}
+                >
+                  <Clock className="w-5 h-5" />
+                </button>
+              </div>
+            )}
             {/* Credits and Share buttons - Medium and Large devices only (below lg) */}
             <div className="flex lg:hidden items-center gap-2">
               {/* Credits Indicator */}
@@ -273,7 +291,8 @@ const ChatSection: React.FC<ChatSectionProps> = ({
         </div>
       )}
 
-      {/* Messages Area */}
+      {/* Messages Area or Version History */}
+      {!showVersionHistory ? (
       <div className="flex-1 overflow-y-auto p-4 space-y-2 flex flex-col chat-messages-container">
         {/* Messages */}
         {messages.length === 0 &&
@@ -499,8 +518,17 @@ const ChatSection: React.FC<ChatSectionProps> = ({
           </>
         )}
       </div>
+      ) : (
+        <div className="flex-1 overflow-y-auto p-0 space-y-0 flex flex-col">
+          <VersionHistoryPanel
+            projectId={projectId as any}
+            onVersionRestored={(versionNumber) => onVersionRestored?.(versionNumber)}
+          />
+        </div>
+      )}
 
-      {/* Input Area */}
+      {/* Input Area (hidden when version history visible) */}
+      {!showVersionHistory && (
       <div className="chat-input-area">
         {rawFilesForUpload.length > 0 && (
           <div className="mb-3 p-2 bg-subtle rounded-lg border border-default">
@@ -738,6 +766,7 @@ const ChatSection: React.FC<ChatSectionProps> = ({
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 };
