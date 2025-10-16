@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { v4 as uuidv4 } from "uuid";
+import { resolveSupabaseCreds } from "@/pages/ChatPage/utils/supabaseCreds";
 
 type DeployPhase = "idle" | "deploying" | "success" | "error";
 
@@ -57,75 +58,25 @@ export const useDeployStore = create<DeployState>((set, get) => ({
       let requestBody: any = { projectId };
 
       if (scope === "fullstack") {
-        // Resolve credentials from provided config or fetch from backend tables
-        let resolvedUrl = supabaseConfig?.supabaseUrl || "";
-        let resolvedAnon = supabaseConfig?.supabaseAnonKey || "";
-        let resolvedServiceRole = supabaseConfig?.supabaseToken || "";
-
-        // If any of the critical fields are missing, fetch from backend
-        if (!resolvedUrl || !resolvedAnon) {
-          try {
-            const projResp = await fetch(
-              `${import.meta.env.VITE_BASE_URL}/api/projects/${projectId}`,
-              {
-                method: "GET",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${token}`,
-                },
-              }
-            );
-            if (projResp.ok) {
-              const data = await projResp.json();
-              // Backend returns keys possibly as aneonkey, supabaseurl
-              resolvedAnon =
-                resolvedAnon || data?.aneonkey || data?.supabaseAnonKey || "";
-              resolvedUrl =
-                resolvedUrl || data?.supabaseurl || data?.supabaseUrl || "";
-            }
-          } catch {}
-        }
-
-        // Resolve supabase service role token from user table if needed (fallback to localStorage)
-        if (!resolvedServiceRole) {
-          try {
-            // Use clerkId passed as parameter to fetch user data
-            if (clerkId) {
-              const meResp = await fetch(
-                `${import.meta.env.VITE_BASE_URL}/api/users/clerk/${clerkId}`,
-                {
-                  method: "GET",
-                  headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                  },
-                }
-              );
-              if (meResp.ok) {
-                const me = await meResp.json();
-                resolvedServiceRole = me?.supabaseToken || resolvedServiceRole;
-              }
-            }
-          } catch {}
-          // Frontend fallback (persisted during connection)
-          if (!resolvedServiceRole) {
-            try {
-              resolvedServiceRole = localStorage.getItem("supabaseAccessToken") || "";
-            } catch {}
-          }
-        }
-
-        if (!resolvedUrl || !resolvedAnon || !resolvedServiceRole) {
-          throw new Error(
-            "Missing Supabase credentials for fullstack deployment"
-          );
-        }
+        const effective = await resolveSupabaseCreds({
+          baseUrl: import.meta.env.VITE_BASE_URL,
+          projectId,
+          clerkId,
+          token,
+          current: {
+            supabaseUrl: supabaseConfig?.supabaseUrl,
+            supabaseAnonKey: supabaseConfig?.supabaseAnonKey,
+            supabaseToken: supabaseConfig?.supabaseToken,
+            databaseUrl: supabaseConfig?.databaseUrl,
+          },
+          localStorageFallbackKey: "supabaseAccessToken",
+        });
 
         requestBody = {
           projectId,
-          supabaseUrl: resolvedUrl,
-          supabaseAnonKey: resolvedAnon,
-          supabaseServiceRoleKey: resolvedServiceRole,
+          supabaseUrl: effective.supabaseUrl,
+          supabaseAnonKey: effective.supabaseAnonKey,
+          supabaseServiceRoleKey: effective.supabaseToken,
         };
       }
 
