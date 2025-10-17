@@ -334,26 +334,6 @@ const Index = () => {
 
     amplitude.track("Blue Generate button");
 
-    /*
-    console.log("Generate button clicked with:", {
-      selectedProjectType,
-      supabaseConfig,
-      isConfigValid,
-      currentProjectId,
-      workflowActive,
-      prompt: prompt.trim()
-    });
-    */
-
-    // if (
-    //   selectedProjectType === "fullstack" &&
-    //   (!supabaseConfig || !isConfigValid)
-    // ) {
-    //   console.log("Fullstack project without valid config, showing project selector");
-    //   setShowProjectTypeSelector(true);
-    //   return;
-    // }
-
     if (currentProjectId && !workflowActive && prompt.trim()) {
       setWorkflowActive(true);
       await startAnalyzeWorkflow(currentProjectId, prompt);
@@ -839,7 +819,7 @@ const Index = () => {
                     transition={{
                       duration: 1,
                       ease: "easeOut",
-                      delay: 1.2,
+                      // delay: 1.2,
                     }}
                     className="form-container"
                   >
@@ -1011,7 +991,7 @@ const Index = () => {
                 transition={{
                   duration: 1,
                   ease: "easeOut",
-                  delay: 1.8,
+                  // delay: 1.8,
                 }}
                 className="projects-section"
               >

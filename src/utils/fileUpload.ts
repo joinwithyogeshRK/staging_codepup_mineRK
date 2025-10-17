@@ -11,14 +11,24 @@ export const uploadFilesToDatabase = async (
 ): Promise<{ success: boolean; data?: { message: string; projectId: string; files: Array<{ name: string; type: string; url: string }> } }> => {
   try {
     if (!files || files.length === 0) {
-      return { success: false };
+      return { success: true };
+    }
+
+    // Filter to ONLY PDFs; ignore extracted images and other docs
+    const pdfFiles = files.filter(
+      (f) => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')
+    );
+
+    if (pdfFiles.length === 0) {
+      // Nothing to upload, treat as successful no-op
+      return { success: true };
     }
 
     const formData = new FormData();
     formData.append('projectId', projectId.toString());
     
-    // Append all files to form data
-    files.forEach((file) => {
+    // Append only PDF files to form data
+    pdfFiles.forEach((file) => {
       formData.append('files', file);
     });
 

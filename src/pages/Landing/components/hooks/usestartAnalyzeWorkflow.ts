@@ -11,6 +11,7 @@ import type {
   SupabaseConfig,
 } from "../types/types";
 import { encodeId } from "@/utils/hashids";
+import { uploadFilesToDatabase } from "@/utils/fileUpload";
 
 interface UseProjectWorkflowParams {
   dbUser: DbUser | null;
@@ -77,11 +78,8 @@ export function useProjectWorkflow({
           formData.append("projectName", currentProject.name);
         }
 
-        // Send both raw images and PDFs directly
+        // Send only extracted images and standalone images (not raw PDFs)
         selectedImages.forEach((file) => {
-          formData.append("images", file);
-        });
-        selectedPdfs.forEach((file) => {
           formData.append("images", file);
         });
         /* // ------- DEBUGGING LOGS ------
@@ -95,6 +93,15 @@ export function useProjectWorkflow({
           }
         }
         // ---------------------------------- */
+        // Fire-and-forget: persist raw PDFs to DB (utility filters to PDFs only)
+        try {
+          if (selectedPdfs && selectedPdfs.length > 0 && token) {
+            await uploadFilesToDatabase(selectedPdfs, projectId, token);
+          }
+        } catch (_) {
+          // Ignore DB upload errors; generation should proceed
+        }
+
         const analyzeResponse = await axios.post(
           `${BASE_URL}/api/design/analyze`,
           formData,
