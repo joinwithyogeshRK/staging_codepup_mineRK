@@ -87,7 +87,7 @@ export function useProjectWorkflow({
           (f) => f.type !== "application/pdf"
         );
         nonPdfAttachments.forEach((file) => {
-          formData.append("documents", file);
+          formData.append("images", file);
         });
         // ------- DEBUGGING LOGS ------
         for (const [key, value] of formData.entries()) {
