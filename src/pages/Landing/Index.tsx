@@ -77,7 +77,7 @@ import type {
 import { useEvaluateRewards } from "./components/hooks/useEvaluateRewards";
 import AnimatedTitle from "./components/AnimatedTitle";
 import { encodeId, decodeId } from "@/utils/hashids";
-import PrizeModel, { usePrizeModal } from "@/components/PrizeModel";
+import SubscriptionModal, { useSubscriptionModal } from "@/components/subscription/SubscriptionModal";
 import { useSupabaseCredentialsStore } from "@/store/supabaseCredentials";
 
 // --- Constants ---
@@ -92,10 +92,10 @@ ProjectCard.displayName = "ProjectCard";
 // --- Main Component ---
 const Index = () => {
   const {
-    isOpen: isPrizeModalOpen,
-    openModal: openPrizeModal,
-    closeModal: closePrizeModal,
-  } = usePrizeModal();
+    isOpen: isSubscriptionModalOpen,
+    openModal: openSubscriptionModal,
+    closeModal: closeSubscriptionModal,
+  } = useSubscriptionModal();
   const [prompt, setPrompt] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -741,14 +741,14 @@ const Index = () => {
           </Link>
 
           <SignedIn>
-            {/* Pricing Button */}
+            {/* Subscription Button */}
             <button
-              onClick={openPrizeModal}
+              onClick={openSubscriptionModal}
               className="flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg text-slate-800 hover:bg-slate-100 transition-colors"
-              title="Pricing"
+              title="Subscription"
             >
               <CreditCard className="w-5 h-5 text-blue-600" />
-              <span className="hidden sm:inline font-medium">Pricing</span>
+              <span className="hidden sm:inline font-medium">Subscription</span>
             </button>
 
             <Link
@@ -1154,8 +1154,8 @@ const Index = () => {
       )}
 
 
-      {/* Pricing Modal */}
-      <PrizeModel isOpen={isPrizeModalOpen} onClose={closePrizeModal} />
+      {/* Subscription Modal */}
+      <SubscriptionModal isOpen={isSubscriptionModalOpen} onClose={closeSubscriptionModal} />
     </>
   );
 };

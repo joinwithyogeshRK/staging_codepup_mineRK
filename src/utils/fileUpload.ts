@@ -60,3 +60,4 @@ export const uploadFileToDatabase = async (
 ): Promise<{ success: boolean; data?: { message: string; projectId: string; files: Array<{ name: string; type: string; url: string }> } }> => {
   return uploadFilesToDatabase([file], projectId, token);
 };
+
