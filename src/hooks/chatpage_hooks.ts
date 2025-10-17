@@ -3,7 +3,9 @@
 import { useState, useCallback, useRef, useEffect, use } from "react";
 import { useLocation } from "react-router-dom";
 import { useSupabaseCredentialsStore } from "@/store/supabaseCredentials";
+import { resolveSupabaseCreds } from "../pages/ChatPage/utils/supabaseCreds";
 import axios from "axios";
+import { uploadFilesToDatabase } from "@/utils/fileUpload";
 import { useAuth } from "@clerk/clerk-react";
 import { StreamingCodeParser } from "../pages/streaming";
 import { WorkflowStateManager } from "../utils/workflowStateManager";
@@ -830,11 +832,35 @@ export const useChatPageLogic = (
 
       // If all validations passed, now actually process the files
       for (const file of files) {
-        // For modification, add files directly without extraction
+        // For modification: extract PDFs to images, keep raw PDF separately
         if (existingProject && currentProject?.status === "ready") {
-          // For modification: add raw files directly
-          setSelectedFiles((prev) => [...prev, file]);
-          setRawFilesForUpload((prev) => [...prev, file]);
+          if (file.type === "application/pdf") {
+            if (
+              !validatePdfFile(file, 5, 5, (message, type) => {
+                setError(message);
+              })
+            ) {
+              if (event.target) {
+                event.target.value = "";
+              }
+              return;
+            }
+
+            const result = await extractImagesFromPdf(
+              file,
+              3,
+              (message, type) => {
+                setError(message);
+              }
+            );
+            if (result) {
+              setSelectedFiles((prev) => [...prev, ...result.extractedImages]);
+              setRawFilesForUpload((prev) => [...prev, result.originalPdf]);
+            }
+          } else {
+            setSelectedFiles((prev) => [...prev, file]);
+            setRawFilesForUpload((prev) => [...prev, file]);
+          }
         } else {
           // For generation: handle PDF files specially - extract images for preview but store raw PDF
           if (file.type === "application/pdf") {
@@ -1447,34 +1473,26 @@ export const useChatPageLogic = (
             ? "/api/design/generateFrontendOnly" // Frontend-only route
             : "/api/generate-fullstack/generate-frontend-with-flexible-backend"; // Fullstack route (main + admin)
 
-        // Build a safe effective config without mutating possibly undefined
-        let effectiveSupabaseConfig: any = {
-          ...(supabaseConfig || {}),
-        };
-        // Prefer in-memory store for token
-        effectiveSupabaseConfig.supabaseToken = supabaseCreds.supabaseAccessToken || "";
-          if (!projectId || !clerkId) return;
-          try {
-            const token = await getToken();
-            const res = await fetch(`${baseUrl}/api/projects/${projId}`, {
-              method: "GET",
-              headers: {
-                "Content-Type": "application/json",
-                ...(token ? { Authorization: `Bearer ${token}` } : {}),
-              },
-            });
-
-            if (!res.ok) {
-              throw new Error(`Failed to fetch project data (${res.status})`);
-            }
-            const data: { aneonkey?: string; databaseUrl?: string, supabaseurl?:string } = await res.json();
-            effectiveSupabaseConfig.supabaseAnonKey = data.aneonkey;
-            effectiveSupabaseConfig.databaseUrl = data.databaseUrl;
-            effectiveSupabaseConfig.supabaseUrl = data.supabaseurl;
-          } catch (err) {
-          }
-        
-        const supabaseAccessToken = effectiveSupabaseConfig?.supabaseToken || "";
+        // Only resolve Supabase creds for fullstack projects
+        const bearerToken = (await getToken()) || "";
+        let effectiveCreds: any = undefined;
+        let supabaseAccessToken = "";
+        if (projectScope === "fullstack") {
+          effectiveCreds = await resolveSupabaseCreds({
+            baseUrl,
+            projectId: projId,
+            clerkId: clerkId!,
+            token: bearerToken,
+            current: {
+              supabaseUrl: supabaseConfig?.supabaseUrl,
+              supabaseAnonKey: supabaseConfig?.supabaseAnonKey,
+              databaseUrl: supabaseConfig?.databaseUrl,
+              supabaseToken: supabaseCreds.supabaseAccessToken,
+            },
+            localStorageFallbackKey: "supabaseAccessToken",
+          });
+          supabaseAccessToken = effectiveCreds.supabaseToken || "";
+        }
 
         // For fullstack, don't block here; backend will validate and we fetch project credentials above
 
@@ -1486,12 +1504,12 @@ export const useChatPageLogic = (
         };
 
         // Only include supabaseConfig for fullstack projects
-        if (projectScope === "fullstack" && effectiveSupabaseConfig) {
+        if (projectScope === "fullstack" && effectiveCreds) {
           Object.assign(requestBody, {
-            supabaseUrl: effectiveSupabaseConfig.supabaseUrl,
-            supabaseAnonKey: effectiveSupabaseConfig.supabaseAnonKey,
+            supabaseUrl: effectiveCreds.supabaseUrl,
+            supabaseAnonKey: effectiveCreds.supabaseAnonKey,
             supabaseToken: supabaseAccessToken,
-            databaseUrl: effectiveSupabaseConfig.databaseUrl,       
+            databaseUrl: effectiveCreds.databaseUrl,       
           });
         }
 
@@ -2373,8 +2391,11 @@ export const useChatPageLogic = (
       // Create user message that includes file info
       let fileInfo = "";
       if (rawFilesForUpload.length > 0) {
-        fileInfo = `\n\n📎 1 file attached`;
+        const fileCount = rawFilesForUpload.length;
+        const fileLabel = fileCount === 1 ? "file" : "files";
+        fileInfo = `\n\n📎 ${fileCount} ${fileLabel} attached`;
       }
+      
 
       const userMessage: Message = {
         id: Date.now().toString(),
@@ -2392,11 +2413,19 @@ export const useChatPageLogic = (
       setSelectedFiles([]);
       setRawFilesForUpload([]);
 
-      // For modification, skip database storage and use raw files directly
-      // Removed file upload to database functionality
+      // Persist raw PDFs (DB only) before sending modification
+      try {
+        const token = await getToken();
+        if (projectId && token) {
+          uploadFilesToDatabase(rawFilesForUpload, projectId, token);
+        }
+      } catch (_) {
+        // ignore DB upload errors
+      }
 
-      // For modification request, use rawFilesForUpload (raw files) instead of selectedFiles (extracted images)
-      const filesForModification = [...rawFilesForUpload];
+      // For modification request, use selectedFiles (extracted images only)
+      // rawFilesForUpload holds original PDFs and should NOT be sent to modification API
+      const filesForModification = [...selectedFiles];
 
       await sendModificationRequest(
         currentPrompt,

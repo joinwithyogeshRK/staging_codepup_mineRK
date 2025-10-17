@@ -6,7 +6,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "../../components/ui/dialog";
-import VersionHistoryWrapper from "../../components/version";
 import React, {
   useContext,
   useEffect,
@@ -478,12 +477,30 @@ const ChatPage: React.FC = () => {
 
   // Removed skipContainerCheck logic per new behavior
 
-  // Force iframe refresh when modification completes
+  // Force iframe refresh and re-check container when modification completes
   useEffect(() => {
     if (!isStreamingModification && streamingData?.type === "complete") {
-      setIframeKey((prev) => prev + 1);
+      // Start loading overlay
+      setIsIframeLoading(true);
+
+      // Determine target URL to check
+      const targetUrl = (currentProject as any)?.productionUrl || previewUrl || (currentProject as any)?.deploymentUrl || "";
+
+      if (targetUrl) {
+        (async () => {
+          setIsCheckingContainer(true);
+          const ok = await checkContainerStatus(targetUrl);
+          setIsContainerOnline(ok);
+          setIsCheckingContainer(false);
+          // Bump key to force iframe reload (even if URL unchanged)
+          setIframeKey((prev) => prev + 1);
+        })();
+      } else {
+        // Fallback: still bump iframe key
+        setIframeKey((prev) => prev + 1);
+      }
     }
-  }, [isStreamingModification, streamingData?.type]);
+  }, [isStreamingModification, streamingData?.type, previewUrl, currentProject, checkContainerStatus]);
 
   // Deploy store selectors (reactive)
   const isDeployingStore = useDeployStore((s) => s.isDeploying);
@@ -716,6 +733,31 @@ const ChatPage: React.FC = () => {
           setShowPublishMenu={setShowChatPublishMenu}
           handleDeploy={handleDeploy}
           canDeploy={canDeploy}
+          onVersionRestored={async (versionNumber) => {
+            // Switch to preview tab
+            setActiveTab("preview");
+
+            // Start loading overlay
+            setIsIframeLoading(true);
+
+            // Re-check container status and refresh iframe
+            const targetUrl = (currentProject as any)?.productionUrl || previewUrl || (currentProject as any)?.deploymentUrl || "";
+            if (targetUrl) {
+              // Manually run a HEAD check without waiting for the effect
+              setIsCheckingContainer(true);
+              const ok = await checkContainerStatus(targetUrl);
+              setIsContainerOnline(ok);
+              setIsCheckingContainer(false);
+              // Ensure iframe refreshes even if URL unchanged
+              setIframeKey((prev) => prev + 1);
+            } else {
+              // Fallback: still bump iframe key to force re-render
+              setIframeKey((prev) => prev + 1);
+            }
+
+            // Show success notification
+            showToast(`Version ${versionNumber} restored successfully`, "success");
+          }}
         />
         {/* Vertical divider for resizing */}
         {!isChatHidden && !isNarrow && (
@@ -802,21 +844,7 @@ const ChatPage: React.FC = () => {
 
               {/* Right side: GitHub, Credits, and Share buttons */}
               <div className="flex items-center gap-2 h-8">
-                {projectStatus === "ready" && projectId && (
-                  <VersionHistoryWrapper
-                    projectId={projectId}
-                    onVersionRestored={(versionNumber) => {
-                      // Refresh preview iframe with cache busting
-                      setIframeKey((prev) => prev + 1);
-
-                      // Show success notification
-                      showToast(
-                        `Version ${versionNumber} restored successfully`,
-                        "success"
-                      );
-                    }}
-                  />
-                )}
+                {/* Version history moved to ChatSection header */}
 
                 {/* GitHub Connect Button - Desktop only */}
                 {projectStatus === "ready" && (
