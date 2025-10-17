@@ -477,12 +477,30 @@ const ChatPage: React.FC = () => {
 
   // Removed skipContainerCheck logic per new behavior
 
-  // Force iframe refresh when modification completes
+  // Force iframe refresh and re-check container when modification completes
   useEffect(() => {
     if (!isStreamingModification && streamingData?.type === "complete") {
-      setIframeKey((prev) => prev + 1);
+      // Start loading overlay
+      setIsIframeLoading(true);
+
+      // Determine target URL to check
+      const targetUrl = (currentProject as any)?.productionUrl || previewUrl || (currentProject as any)?.deploymentUrl || "";
+
+      if (targetUrl) {
+        (async () => {
+          setIsCheckingContainer(true);
+          const ok = await checkContainerStatus(targetUrl);
+          setIsContainerOnline(ok);
+          setIsCheckingContainer(false);
+          // Bump key to force iframe reload (even if URL unchanged)
+          setIframeKey((prev) => prev + 1);
+        })();
+      } else {
+        // Fallback: still bump iframe key
+        setIframeKey((prev) => prev + 1);
+      }
     }
-  }, [isStreamingModification, streamingData?.type]);
+  }, [isStreamingModification, streamingData?.type, previewUrl, currentProject, checkContainerStatus]);
 
   // Deploy store selectors (reactive)
   const isDeployingStore = useDeployStore((s) => s.isDeploying);
