@@ -214,7 +214,21 @@ const ChatSection: React.FC<ChatSectionProps> = ({
                 </button>
               </div>
             )}
-            {/* Credits and Share buttons - Medium and Large devices only (below lg) */}
+            {/* Mobile: Version History button before Credits */}
+            {projectStatus === "ready" && projectId && (
+              <div className="flex lg:hidden items-center h-8">
+                <button
+                  className="flex items-center justify-center w-8 h-8 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-all duration-200"
+                  title="Version History"
+                  aria-label="Open version history"
+                  onClick={() => setShowVersionHistory((v) => !v)}
+                >
+                  <Clock className="w-5 h-5" />
+                </button>
+              </div>
+            )}
+
+            {/* Credits and Share buttons - Mobile */}
             <div className="flex lg:hidden items-center gap-2">
               {/* Credits Indicator */}
               <div className="flex items-center">

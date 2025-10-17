@@ -86,6 +86,15 @@ const ImageUploadSection = ({
         setIsProcessingPdf(true);
         try {
           for (const pdfFile of pdfFiles) {
+            // Track original PDF in selectedPdfs (for DB upload and preview control)
+            if (typeof setSelectedPdfs === 'function') {
+              setSelectedPdfs((prev: File[]) => {
+                const exists = prev.some((p) => p.name === pdfFile.name && p.size === pdfFile.size);
+                if (exists) return prev;
+                return [...prev, pdfFile];
+              });
+            }
+
             const extractionResult = await extractImagesFromPdf(pdfFile, 5, showToast);
             if (extractionResult) {
               // Add extracted images to allImageFiles
