@@ -1,12 +1,13 @@
 import * as pdfjsLib from "pdfjs-dist";
 
-// Use the most reliable CDN approach
+// Use the official worker from CDN
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
 export interface ExtractedImageFile extends File {
   originalPdfName: string;
   pageNumber: number;
   totalPages: number;
+  sliceNumber?: number;
 }
 
 export interface PdfExtractionResult {
@@ -14,23 +15,15 @@ export interface PdfExtractionResult {
   originalPdf: File;
 }
 
-/**
- * Extracts images from PDF pages and returns both the extracted images and original PDF
- * @param pdfFile - The PDF file to extract images from
- * @param pageSizeLimit - Maximum number of pages to extract (default: 5)
- * @param showToast - Toast function for error messages
- * @returns Promise with extracted images and original PDF
- */
 export const extractImagesFromPdf = async (
   pdfFile: File,
   pageSizeLimit: number = 5,
-  showToast: (message: string, type: "success" | "error", duration?: number) => void
+  showToast: (msg: string, type: "success" | "error", duration?: number) => void
 ): Promise<PdfExtractionResult | null> => {
   try {
     const arrayBuffer = await pdfFile.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
-    // Check page limit
     if (pdf.numPages > pageSizeLimit) {
       showToast(
         `🐾 Arf! "${pdfFile.name}" has ${pdf.numPages} pages. Our pup can only handle ${pageSizeLimit} at a time.`,
@@ -41,93 +34,85 @@ export const extractImagesFromPdf = async (
 
     const extractedImages: ExtractedImageFile[] = [];
 
+    // A4 size in pixels at 150 DPI (you can tune)
+    const A4_WIDTH_PX = Math.round(8.27 * 150);
+    const A4_HEIGHT_PX = Math.round(12 * 150);
+    const OVERLAP_PX = 40; // vertical overlap between slices
+
     for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
       const page = await pdf.getPage(pageNum);
-      const viewport = page.getViewport({ scale: 1.5 });
-
-      // Create canvas to render PDF page
+      const viewport = page.getViewport({ scale: 2 }); // ~144 DPI
       const canvas = document.createElement("canvas");
-      const context = canvas.getContext("2d")!;
-      canvas.height = viewport.height;
+      const ctx = canvas.getContext("2d")!;
       canvas.width = viewport.width;
+      canvas.height = viewport.height;
 
-      // Render page to canvas
-      await page.render({
-        canvasContext: context,
-        viewport: viewport,
-        canvas: canvas,
-      }).promise;
+      await page.render({ canvasContext: ctx, viewport, canvas }).promise;
 
-      // Convert canvas to blob with better error handling
-      const blob = await new Promise<Blob>((resolve, reject) => {
-        canvas.toBlob(
-          (result) => {
-            if (result) {
-              resolve(result);
-            } else {
-              reject(new Error("Failed to convert canvas to blob"));
-            }
-          },
-          "image/png",
-          0.9
+      const pageWidth = canvas.width;
+      const pageHeight = canvas.height;
+
+      // Compute how many slices fit into this page
+      const sliceHeight = A4_HEIGHT_PX;
+      const nSlices = Math.ceil((pageHeight + OVERLAP_PX) / (sliceHeight - OVERLAP_PX));
+
+      for (let s = 0; s < nSlices; s++) {
+        const startY = s * (sliceHeight - OVERLAP_PX);
+        const endY = Math.min(startY + sliceHeight, pageHeight);
+        const actualHeight = endY - startY;
+
+        // Create sub-canvas
+        const sliceCanvas = document.createElement("canvas");
+        sliceCanvas.width = pageWidth;
+        sliceCanvas.height = actualHeight;
+        const sliceCtx = sliceCanvas.getContext("2d")!;
+
+        sliceCtx.drawImage(
+          canvas,
+          0, startY, pageWidth, actualHeight, // source rect
+          0, 0, pageWidth, actualHeight       // destination rect
         );
-      });
 
-      // Create a File object from the blob with PDF metadata
-      const imageFile = new File(
-        [blob],
-        `${pdfFile.name}-page-${pageNum}.png`,
-        {
-          type: "image/png",
-          lastModified: Date.now(),
-        }
-      ) as ExtractedImageFile;
+        const blob = await new Promise<Blob>((resolve, reject) => {
+          sliceCanvas.toBlob(
+            (b) => (b ? resolve(b) : reject(new Error("toBlob failed"))),
+            "image/png",
+            0.9
+          );
+        });
 
-      // Add custom properties to identify this as a PDF-derived image
-      imageFile.originalPdfName = pdfFile.name;
-      imageFile.pageNumber = pageNum;
-      imageFile.totalPages = pdf.numPages;
+        const imageFile = new File(
+          [blob],
+          `${pdfFile.name}-page-${pageNum}-slice-${s + 1}.png`,
+          { type: "image/png", lastModified: Date.now() }
+        ) as ExtractedImageFile;
 
-      extractedImages.push(imageFile);
+        imageFile.originalPdfName = pdfFile.name;
+        imageFile.pageNumber = pageNum;
+        imageFile.totalPages = pdf.numPages;
+        imageFile.sliceNumber = s + 1;
+
+        extractedImages.push(imageFile);
+      }
     }
 
-    return {
-      extractedImages,
-      originalPdf: pdfFile,
-    };
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-
-    // More specific error messages
-    if (errorMessage.includes("Invalid PDF")) {
+    return { extractedImages, originalPdf: pdfFile };
+  } catch (err: any) {
+    const msg = err?.message ?? String(err);
+    if (msg.includes("Invalid PDF"))
       showToast(`🐾 Arf! "${pdfFile.name}" doesn't look like a valid PDF. Try another file?`, "error");
-    } else if (errorMessage.includes("workerSrc")) {
-      showToast(
-        "🐾 Arf! Our pup couldn't chew through this PDF. Please refresh and try again!",
-        "error"
-      );
-    } else {
-      showToast(`🐾 Arf! Our pup had trouble sniffing through your PDF: ${errorMessage}.`, "error");
-    }
+    else
+      showToast(`🐾 Arf! Our pup had trouble sniffing through your PDF: ${msg}`, "error");
     return null;
   }
 };
 
-/**
- * Validates PDF file size and page count
- * @param pdfFile - The PDF file to validate
- * @param maxSizeMB - Maximum file size in MB (default: 3.75)
- * @param pageSizeLimit - Maximum number of pages (default: 5)
- * @param showToast - Toast function for error messages
- * @returns true if valid, false otherwise
- */
 export const validatePdfFile = (
   pdfFile: File,
-  maxSizeMB: number = 5,
-  pageSizeLimit: number = 5,
-  showToast: (message: string, type: "success" | "error", duration?: number) => void
+  maxSizeMB = 5,
+  pageSizeLimit = 5,
+  showToast: (m: string, t: "success" | "error", d?: number) => void
 ): boolean => {
-  // Check file size
   if (pdfFile.size > maxSizeMB * 1024 * 1024) {
     showToast(
       `🐾 Ruff! "${pdfFile.name}" is too big for our pup to carry. Max size is ${maxSizeMB}MB.`,
@@ -135,8 +120,5 @@ export const validatePdfFile = (
     );
     return false;
   }
-
-  // Note: Page count validation is handled in extractImagesFromPdf function
-  // This function only validates file size
   return true;
 };
