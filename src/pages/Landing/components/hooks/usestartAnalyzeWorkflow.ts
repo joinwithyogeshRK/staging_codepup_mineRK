@@ -78,11 +78,18 @@ export function useProjectWorkflow({
           formData.append("projectName", currentProject.name);
         }
 
-        // Send only extracted images and standalone images (not raw PDFs)
+        // Send extracted/standalone images
         selectedImages.forEach((file) => {
           formData.append("images", file);
         });
-        /* // ------- DEBUGGING LOGS ------
+        // Also send non-PDF reference documents (csv, md, xlsx, xls, txt, svg, webp, ico, etc.)
+        const nonPdfAttachments = (selectedPdfs || []).filter(
+          (f) => f.type !== "application/pdf"
+        );
+        nonPdfAttachments.forEach((file) => {
+          formData.append("documents", file);
+        });
+        // ------- DEBUGGING LOGS ------
         for (const [key, value] of formData.entries()) {
           if (value instanceof File) {
             console.log(
