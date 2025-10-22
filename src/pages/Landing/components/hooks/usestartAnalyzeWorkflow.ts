@@ -78,15 +78,45 @@ export function useProjectWorkflow({
           formData.append("projectName", currentProject.name);
         }
 
+        // Determine projectType based on scope and file types
+        const projectScope = currentProject?.scope || selectedProjectType || "frontend";
+        
+        // Separate CSV/Excel files from other non-PDF attachments
+        const nonPdfAttachments = (selectedPdfs || []).filter(
+          (f) => f.type !== "application/pdf"
+        );
+        
+        const csvExcelFiles = nonPdfAttachments.filter((file) => {
+          const lower = file.name.toLowerCase();
+          return lower.endsWith(".csv") || lower.endsWith(".xlsx") || lower.endsWith(".xls");
+        });
+        
+        const hasCsvOrExcel = csvExcelFiles.length > 0;
+        
+        let projectType = "general";
+        if (projectScope === "fullstack" && hasCsvOrExcel) {
+          projectType = "dashboard";
+        }
+        
+        formData.append("projectType", projectType);
+
         // Send extracted/standalone images
         selectedImages.forEach((file) => {
           formData.append("images", file);
         });
-        // Also send non-PDF reference documents (csv, md, xlsx, xls, txt, svg, webp, ico, etc.)
-        const nonPdfAttachments = (selectedPdfs || []).filter(
-          (f) => f.type !== "application/pdf"
-        );
-        nonPdfAttachments.forEach((file) => {
+        
+        const otherNonPdfFiles = nonPdfAttachments.filter((file) => {
+          const lower = file.name.toLowerCase();
+          return !lower.endsWith(".csv") && !lower.endsWith(".xlsx") && !lower.endsWith(".xls");
+        });
+        
+        // Send CSV/Excel files as "documents"
+        csvExcelFiles.forEach((file) => {
+          formData.append("documents", file);
+        });
+        
+        // Send other non-PDF files (md, txt, svg, webp, ico) as "images"
+        otherNonPdfFiles.forEach((file) => {
           formData.append("images", file);
         });
         // ------- DEBUGGING LOGS ------
