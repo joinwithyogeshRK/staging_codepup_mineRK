@@ -229,6 +229,8 @@ const Index = () => {
     getToken,
     setWorkflowActive,
     setIsLoading,
+    setSelectedImages,
+    setSelectedPdfs,
     amplitudeTrack: amplitude.track, // pass amplitude tracking function
     BASE_URL,
   });
@@ -337,17 +339,11 @@ const Index = () => {
     if (currentProjectId && !workflowActive && prompt.trim()) {
       setWorkflowActive(true);
       await startAnalyzeWorkflow(currentProjectId, prompt);
-      // Clear files after starting workflow to prevent re-upload
-      setSelectedImages([]);
-      setSelectedPdfs([]);
       return;
     }
 
     if (workflowActive && currentProjectId && prompt.trim()) {
       await startAnalyzeWorkflow(currentProjectId, prompt);
-      // Clear files after continuing workflow to prevent re-upload
-      setSelectedImages([]);
-      setSelectedPdfs([]);
     }
   }, [
     dbUser,
