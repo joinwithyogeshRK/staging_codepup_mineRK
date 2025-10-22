@@ -30,6 +30,8 @@ interface UseProjectWorkflowParams {
   getToken: () => Promise<string | null>;
   setWorkflowActive: (val: boolean) => void;
   setIsLoading: (val: boolean) => void;
+  setSelectedImages: React.Dispatch<React.SetStateAction<File[]>>;
+  setSelectedPdfs: React.Dispatch<React.SetStateAction<File[]>>;
   amplitudeTrack: (eventName: string) => void;
   BASE_URL: string;
 }
@@ -49,6 +51,8 @@ export function useProjectWorkflow({
   getToken,
   setWorkflowActive,
   setIsLoading,
+  setSelectedImages,
+  setSelectedPdfs,
   amplitudeTrack,
   BASE_URL,
 }: UseProjectWorkflowParams) {
@@ -100,24 +104,25 @@ export function useProjectWorkflow({
         
         formData.append("projectType", projectType);
 
-        // Send extracted/standalone images
+        // Send ALL files under "documents" field (backend expects this)
+        // Backend will separate by MIME type: images, PDFs, CSV, Excel
         selectedImages.forEach((file) => {
-          formData.append("images", file);
+          formData.append("documents", file);
         });
         
+        // Send CSV/Excel files as "documents" (same field)
+        csvExcelFiles.forEach((file) => {
+          formData.append("documents", file);
+        });
+        
+        // Send other non-PDF files (md, txt, svg, webp, ico) as "documents"
         const otherNonPdfFiles = nonPdfAttachments.filter((file) => {
           const lower = file.name.toLowerCase();
           return !lower.endsWith(".csv") && !lower.endsWith(".xlsx") && !lower.endsWith(".xls");
         });
         
-        // Send CSV/Excel files as "documents"
-        csvExcelFiles.forEach((file) => {
-          formData.append("documents", file);
-        });
-        
-        // Send other non-PDF files (md, txt, svg, webp, ico) as "images"
         otherNonPdfFiles.forEach((file) => {
-          formData.append("images", file);
+          formData.append("documents", file);
         });
         // ------- DEBUGGING LOGS ------
         for (const [key, value] of formData.entries()) {
@@ -166,6 +171,10 @@ export function useProjectWorkflow({
             };
           }
 
+          // Clear attached files after successful API call
+          setSelectedImages([]);
+          setSelectedPdfs([]);
+
           // Automatically navigate to chatpage after design analysis is complete
           // This replaces the manual green button click
           const currentProject = projects.find((p) => p.id === projectId);
@@ -193,6 +202,9 @@ export function useProjectWorkflow({
             "error"
           );
           setWorkflowActive(false);
+          // Clear attached files after failed API call
+          setSelectedImages([]);
+          setSelectedPdfs([]);
         }
       } catch (error) {
         // Any network/axios error
@@ -201,6 +213,9 @@ export function useProjectWorkflow({
           "error"
         );
         setWorkflowActive(false);
+        // Clear attached files after error
+        setSelectedImages([]);
+        setSelectedPdfs([]);
       } finally {
         setIsLoading(false);
       }
@@ -215,6 +230,8 @@ export function useProjectWorkflow({
       getToken,
       setWorkflowActive,
       setIsLoading,
+      setSelectedImages,
+      setSelectedPdfs,
       BASE_URL,
       navigate,
     ]
