@@ -78,11 +78,48 @@ export function useProjectWorkflow({
           formData.append("projectName", currentProject.name);
         }
 
-        // Send only extracted images and standalone images (not raw PDFs)
+        // Determine projectType based on scope and file types
+        const projectScope = currentProject?.scope || selectedProjectType || "frontend";
+        
+        // Separate CSV/Excel files from other non-PDF attachments
+        const nonPdfAttachments = (selectedPdfs || []).filter(
+          (f) => f.type !== "application/pdf"
+        );
+        
+        const csvExcelFiles = nonPdfAttachments.filter((file) => {
+          const lower = file.name.toLowerCase();
+          return lower.endsWith(".csv") || lower.endsWith(".xlsx") || lower.endsWith(".xls");
+        });
+        
+        const hasCsvOrExcel = csvExcelFiles.length > 0;
+        
+        let projectType = "general";
+        if (projectScope === "fullstack" && hasCsvOrExcel) {
+          projectType = "dashboard";
+        }
+        
+        formData.append("projectType", projectType);
+
+        // Send extracted/standalone images
         selectedImages.forEach((file) => {
           formData.append("images", file);
         });
-        /* // ------- DEBUGGING LOGS ------
+        
+        const otherNonPdfFiles = nonPdfAttachments.filter((file) => {
+          const lower = file.name.toLowerCase();
+          return !lower.endsWith(".csv") && !lower.endsWith(".xlsx") && !lower.endsWith(".xls");
+        });
+        
+        // Send CSV/Excel files as "documents"
+        csvExcelFiles.forEach((file) => {
+          formData.append("documents", file);
+        });
+        
+        // Send other non-PDF files (md, txt, svg, webp, ico) as "images"
+        otherNonPdfFiles.forEach((file) => {
+          formData.append("images", file);
+        });
+        // ------- DEBUGGING LOGS ------
         for (const [key, value] of formData.entries()) {
           if (value instanceof File) {
             console.log(
