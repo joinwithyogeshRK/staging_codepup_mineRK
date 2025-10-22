@@ -30,6 +30,7 @@ export default function GitHubModel({ projectId, clerkId }: GitHubModelProps) {
   const [zipUrl, setZipUrl] = useState("");
   const [repoName, setRepoName] = useState("");
   const [repoUrl, setRepoUrl] = useState<string | null>(null);
+  const [existingRepoName, setExistingRepoName] = useState<string | null>(null);
 
   const [githubConnected, setGithubConnected] = useState(false);
   const [githubUsername, setGithubUsername] = useState<string | null>(null);
@@ -126,6 +127,12 @@ export default function GitHubModel({ projectId, clerkId }: GitHubModelProps) {
       if (data.githubRepourl) {
         setRepoUrl(data.githubRepourl);
         setProjectConnected(true);
+
+        // Extract repo name from URL
+        const parts = data.githubRepourl.split("/");
+        const extractedName =
+          parts[parts.length - 1]?.replace(/\.git$/, "") || null;
+        setExistingRepoName(extractedName);
       }
     } catch (err) {
       // Don't show error to user as this is just checking existing connection
@@ -164,7 +171,7 @@ export default function GitHubModel({ projectId, clerkId }: GitHubModelProps) {
         setGithubConnected(false);
         setGithubAvatar(null);
         setGithubUsername(null);
-      }
+      }  
     } catch (err) {
       // Don't set error message for user details fetch to avoid UI clutter
     }
@@ -175,10 +182,7 @@ export default function GitHubModel({ projectId, clerkId }: GitHubModelProps) {
    */
   const handleLogin = async () => {
     if (!GITHUB_CLIENT_ID || !clerkId) {
-      showToast(
-        "Configuration error",
-        "error"
-      );
+      showToast("Configuration error", "error");
       return;
     }
     const state = { clerkId };
@@ -242,7 +246,9 @@ export default function GitHubModel({ projectId, clerkId }: GitHubModelProps) {
     try {
       const requestBody = {
         zipUrl,
-        reponame: repoName.trim(),
+        reponame: isUpdate
+          ? existingRepoName || repoName.trim()
+          : repoName.trim(),
         clerkId,
         projectId,
       };
@@ -446,7 +452,11 @@ export default function GitHubModel({ projectId, clerkId }: GitHubModelProps) {
                             isUpdatingProject ? "animate-spin" : ""
                           }`}
                         />
-                        {isUpdatingProject ? "Updating..." : "Update Project"}
+                        {isUpdatingProject
+                          ? "Updating..."
+                          : existingRepoName
+                          ? `Update ${existingRepoName}`
+                          : "Update Project"}
                       </button>
                     </div>
                   </div>
