@@ -59,7 +59,7 @@ const Navbar = () => {
       rounded-2xl px-8 py-4 flex items-center justify-between 
       backdrop-blur-md 
       transition-all duration-300 ${
-        isScrolled ? "bg-black/20 scale-[1.01]" : ""
+        isScrolled ? "bg-black/10 scale-[1.01]" : ""
       }`}
     >
       {/* Brand */}
@@ -86,7 +86,7 @@ const Navbar = () => {
               className={`relative text-sm font-medium transition-all duration-300 uppercase tracking-wide
                 ${
                   activeSection === section.id
-                    ? "text-yellow-600"
+                    ? "text-blue-500"
                     : "text-gray-700 font-light hover:text-gray-900"
                 }
                 after:content-[''] after:absolute after:-bottom-1 after:left-0 after:h-[1px]
@@ -106,7 +106,7 @@ const Navbar = () => {
           <SignInButton mode="modal">
             <button
               className="text-sm font-semibold px-4 py-2 rounded-xl bg-white text-black 
-              hover:bg-neutral-200 transition-all duration-300 shadow-md"
+              hover:bg-neutral-200  transition-all duration-300 shadow-md"
             >
               Sign In
             </button>

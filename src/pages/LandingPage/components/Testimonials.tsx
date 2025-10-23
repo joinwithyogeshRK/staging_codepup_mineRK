@@ -85,19 +85,19 @@ const Testimonials = () => {
   const thirdColumn = testimonials.slice(6, 9);
 
   return (
-    <section className="bg-background relative py-20">
+    <section className="bg-background  relative py-20">
       <div className="container z-10 mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
           viewport={{ once: true }}
-          className="flex flex-col items-center justify-center mx-auto text-center"
+          className="flex flex-col  items-center justify-center  mx-auto text-center"
         >
-          <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-6xl font-bold">
+          <h2 className="font-montserrat text-4xl font-bold bg-gradient-to-r from-gray-800 via-gray-500 to-blue-400 bg-clip-text text-transparent  sm:text-2xl md:text-3xl lg:text-4xl xl:text-6xl ">
             What Our Users Say
           </h2>
-          <p className="text-lg italic mt-5 opacity-75 max-w-2xl">
+          <p className="font-montserrat text-lg font-extralight italic mt-5 opacity-75 max-w-2xl">
             See what our customers have to say about us.
           </p>
         </motion.div>

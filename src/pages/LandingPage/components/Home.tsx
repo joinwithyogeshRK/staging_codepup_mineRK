@@ -1,10 +1,12 @@
-import ProjectGallery from '@/components/ProjectGallery';
+import ProjectGallery from './Gallery';
 import { Hero } from '@/components/ui/hero1'
 
 import React from 'react'
 import Testimonials from './Testimonials';
 import { FAQDemo } from './FAQ';
-import { CardFooter } from '@/components/ui/card';
+
+
+import SubscriptionCards from './subscriptionPage';
 
 const Home = () => {
   return (
@@ -22,12 +24,12 @@ const Home = () => {
       <section id="testimonials">
         <Testimonials />
       </section>
-   
+      <section id="pricing">
+        <SubscriptionCards />
+      </section>
+
       <section id="faq">
         <FAQDemo />
-      </section>
-      <section id="footer">
-   
       </section>
     </div>
   );

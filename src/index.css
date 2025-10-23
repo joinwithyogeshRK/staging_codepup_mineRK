@@ -1,11 +1,32 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Roboto+Mono:wght@400;700&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
+
+
+
+
+
+
+
+
+
+
+
 /*---break---*/
 @custom-variant dark (&:is(.dark *));
 
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
+.font-montserrat {
+  font-family: 'Montserrat', sans-serif;
+}
+
+.font-roboto {
+  font-family: 'Roboto Mono', monospace;
+}
+
+
 
 .hide-scrollbar {
   -ms-overflow-style: none;
@@ -2169,6 +2190,8 @@
 }
 /*---break---*/
 :root {
+  --font-roboto: "Roboto Mono", monospace;
+
   --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
