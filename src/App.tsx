@@ -9,9 +9,9 @@ import HackathonShowcase from "./components/HackathonShowcase";
 import ProjectGallery from "./components/ProjectGallery";
 import IndividualPost from "./components/HackathonPost";
 import UserDashboard from "./components/UserDashboard";
-import HackathonOverComponent from "./pages/HackathonCompletionPage";
-import Hackathon from "./pages/Hackathon";
+
 import NotFoundPage from "./pages/NotFoundPage";
+import Home from "./pages/LandingPage/components/Home";
 
 function App() {
   return (
@@ -19,7 +19,8 @@ function App() {
       <ToastProvider>
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Index />} />
+            <Route path="/" element={<Home/>}/>
+            <Route path="/home" element={<Index />} />
             <Route path="/chatPage/:projectId" element={<ChatPage />} />
             <Route path="/hackathon" element={<HackathonShowcase />} />
             
