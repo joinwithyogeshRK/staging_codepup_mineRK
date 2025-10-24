@@ -3,69 +3,50 @@ import React, { useState } from "react";
 const PartnerCarousel = () => {
   const [isPaused, setIsPaused] = useState(false);
 
-  // Real partner logos (SVG/PNG)
+  // ✅ Use correct paths from the public folder (React automatically serves these)
   const partners = [
     {
-      name: "Google",
-      logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/google.svg",
+      name: "Walmart",
+      logo: "/walmart.png",
     },
     {
-      name: "Microsoft",
-      logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/microsoft.svg",
+      name: "Flipkart",
+      logo: "/flipkart.jpeg",
     },
     {
-      name: "Amazon",
-      logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/amazon.svg",
+      name: "Clear",
+      logo: "/clear.jpeg",
     },
     {
-      name: "Meta",
-      logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/meta.svg",
+      name: "Unbox",
+      logo: "/unbox.jpeg",
     },
     {
-      name: "Apple",
-      logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/apple.svg",
-    },
-    {
-      name: "Netflix",
-      logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/netflix.svg",
-    },
-    {
-      name: "Spotify",
-      logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/spotify.svg",
-    },
-    {
-      name: "Adobe",
-      logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/adobe.svg",
-    },
-    {
-      name: "Tesla",
-      logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/tesla.svg",
-    },
-    {
-      name: "X",
-      logo: "https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/x.svg",
+      name: "Ex-Zynga",
+      logo: "/ex.jpeg",
     },
   ];
 
   const duplicatedPartners = [...partners, ...partners];
 
   return (
-    <section className="w-full bg-gradient-to-b mt-2 -mb-3 from-gray-50 to-white py-14 px-4 overflow-hidden">
+    <section className="w-full bg-gradient-to-b from-gray-50 to-white py-14 px-4 overflow-hidden">
       <div className="max-w-7xl mx-auto">
-        {/* Carousel Container */}
         <div
           className="relative"
-          onMouseEnter={() => setIsPaused(false)}
+          onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
         >
-          {/* Fading Gradient Edges */}
-          <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
-          <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
+          {/* Gradient Edges */}
+          <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
+          <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
 
           {/* Scrolling Track */}
           <div className="flex overflow-hidden">
             <div
-              className={`flex gap-10 ${isPaused ? "" : "animate-scroll"}`}
+              className={`flex gap-16 md:gap-24 ${
+                isPaused ? "" : "animate-scroll"
+              }`}
               style={{
                 animationPlayState: isPaused ? "paused" : "running",
               }}
@@ -73,13 +54,12 @@ const PartnerCarousel = () => {
               {duplicatedPartners.map((partner, index) => (
                 <div
                   key={`${partner.name}-${index}`}
-                  className="flex-shrink-0 w-28 h-20 flex items-center justify-center grayscale hover:grayscale-0 transition-all duration-300"
+                  className="flex-shrink-0 w-40 md:w-52 h-24 flex items-center justify-center grayscale hover:grayscale-0 transition-all duration-300"
                 >
                   <img
                     src={partner.logo}
                     alt={partner.name}
-                    className="max-w-[50px] max-h-[50px] object-contain opacity-70 hover:opacity-100 hover:scale-110 transition-all duration-300"
-                    style={{ filter: "invert(0)" }}
+                    className="max-w-[100px] md:max-w-[130px] max-h-[70px] object-contain opacity-80 hover:opacity-100 hover:scale-110 transition-all duration-300"
                   />
                 </div>
               ))}

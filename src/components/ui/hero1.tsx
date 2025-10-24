@@ -2,11 +2,12 @@ import { ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button1";
 import Navbar from "./Navbar";
 import { motion } from "framer-motion";
-import PartnerCarousel from "@/pages/LandingPage/components/PartnerCarousel";
+
+import { SignedIn, SignedOut, SignInButton } from "@clerk/clerk-react";
+import { useNavigate } from "react-router-dom";
 
 interface HeroProps {
   eyebrow?: string;
-
   subtitle: string;
   ctaLabel?: string;
   ctaHref?: string;
@@ -16,13 +17,22 @@ interface HeroProps {
 
 export function Hero({
   eyebrow = "Innovate Without Limits",
-
   subtitle,
-  ctaLabel = "Explore Now",
+  ctaLabel = "Try for Free",
   ctaHref = "#",
   demoLabel = "Demo Video",
-  demoHref = "#demo",
+  demoHref = "#image", // Changed to match the section id
 }: HeroProps) {
+  const navigate = useNavigate();
+
+  // Smooth scroll to section
+  const scrollToSection = (id: string) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
   return (
     <section
       id="hero"
@@ -79,7 +89,6 @@ export function Hero({
       )}
 
       {/* Title */}
-
       <h1 className="text-balance bg-gradient-to-br flex flex-col from-black from-30% to-black/40 bg-clip-text py-6 text-5xl font-extrabold leading-none tracking-tighter text-transparent sm:text-6xl md:text-7xl lg:text-8xl dark:from-white dark:to-white/40 px-4">
         <div className="flex justify-center items-center gap-6">
           <span className="block">Your </span>
@@ -109,19 +118,33 @@ export function Hero({
       {/* CTA Buttons */}
       {ctaLabel && (
         <div className="flex flex-col sm:flex-row   justify-center gap-4 items-center">
-          <Button
-            asChild
-            className="w-fit md:w-52 z-20 font-geist bg-gray-700 tracking-tighter text-center text-lg"
-          >
-            <a href={ctaHref}>{ctaLabel}</a>
-          </Button>
+          {/* Try for Free Button - Show sign-in if not logged in */}
+          <SignedOut>
+            <SignInButton mode="modal">
+              <Button className="w-fit md:w-52 z-20 font-geist bg-gray-700 tracking-tighter text-center text-lg">
+                Try for Free
+              </Button>
+            </SignInButton>
+          </SignedOut>
+
+          {/* If already signed in, redirect to /home */}
+          <SignedIn>
+            <Button
+              onClick={() => navigate("/home")}
+              className="w-fit md:w-52 z-20 font-geist bg-gray-700 tracking-tighter text-center text-lg"
+            >
+              Try for Free
+            </Button>
+          </SignedIn>
+
+          {/* Demo Video Button - Scrolls to image section */}
           {demoLabel && (
             <Button
-              asChild
+              onClick={() => scrollToSection("image")}
               variant="outline"
-              className="w-fit md:w-52 z-20 font-geist tracking-tighter text-center text-lg"
+              className="w-fit md:w-52 z-20 font-geist tracking-tighter text-center text-lg cursor-pointer"
             >
-              <a href={demoHref}>{demoLabel}</a>
+              {demoLabel}
             </Button>
           )}
         </div>
