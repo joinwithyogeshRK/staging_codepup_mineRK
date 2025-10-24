@@ -1,6 +1,8 @@
 import { ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button1";
 import Navbar from "./Navbar";
+import { motion } from "framer-motion";
+import PartnerCarousel from "@/pages/LandingPage/components/PartnerCarousel";
 
 interface HeroProps {
   eyebrow?: string;
@@ -30,7 +32,18 @@ export function Hero({
       dark:bg-[linear-gradient(to_bottom,#000,#0000_30%,#898e8e_78%,#ffffff_99%_50%)] 
       "
     >
+      <motion.div
+        className="absolute top-10 left-10 z-30"
+        animate={{ y: [0, -10, 0] }}
+        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+      >
+        <h1 className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-gray-900 to-blue-400 bg-clip-text text-transparent">
+          CodePup
+        </h1>
+      </motion.div>
+
       <Navbar />
+
       {/* Grid BG */}
       <div
         className=" absolute -z-10 inset-0 opacity-80  w-full 
@@ -98,7 +111,7 @@ export function Hero({
         <div className="flex flex-col sm:flex-row   justify-center gap-4 items-center">
           <Button
             asChild
-            className="w-fit md:w-52 z-20 font-geist tracking-tighter text-center text-lg"
+            className="w-fit md:w-52 z-20 font-geist bg-gray-700 tracking-tighter text-center text-lg"
           >
             <a href={ctaHref}>{ctaLabel}</a>
           </Button>

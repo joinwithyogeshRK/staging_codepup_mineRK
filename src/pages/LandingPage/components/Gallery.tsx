@@ -696,7 +696,7 @@ const ProjectGallery: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen  p-4">
+    <div className="min-h-screen bg-gradient-to-tl bg-gray-100/10  p-4">
       {/* Header */}
       <div className="max-w-7xl mx-auto mb-8">
         
@@ -715,21 +715,8 @@ const ProjectGallery: React.FC = () => {
           </p>
         </div>
 
-        {/* Search Bar */}
-        <div className="max-w-4xl mx-auto mb-8">
-          <div className="bg-white rounded-xl shadow-lg p-2 flex items-center">
-            <div className="flex-1 flex items-center">
-              <Search className="w-5 h-5 text-slate-400 ml-4 mr-3" />
-              <input
-                type="text"
-                placeholder="Search projects by name, description, creator, or tags..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1 py-3 text-slate-700 placeholder-slate-400 outline-none"
-              />
-            </div>
-          </div>
-        </div>
+        
+       
       </div>
 
       {/* Error State */}
@@ -752,66 +739,7 @@ const ProjectGallery: React.FC = () => {
       )}
 
       {/* Featured Projects Section */}
-      {featuredProjects.length > 0 && (
-        <div className="max-w-7xl mx-auto mb-16">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-lg"></div>
-              <h2 className="text-3xl font-bold text-slate-800">Featured</h2>
-            </div>
-            <div className="flex-1 h-px bg-gradient-to-r from-yellow-300 to-transparent"></div>
-          </div>
-
-          {/* Horizontal Carousel */}
-          <div className="relative group">
-            {/* Left Arrow - Hidden on mobile, always visible on desktop */}
-            {featuredProjects.length > 1 && (
-              <button
-                onClick={() => scrollCarousel("left")}
-                className="hidden sm:block absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-white/90 hover:bg-white shadow-lg rounded-full p-2 transition-all duration-300 hover:scale-110"
-                style={{ marginLeft: "-20px" }}
-              >
-                <ChevronLeft className="w-6 h-6 text-slate-700" />
-              </button>
-            )}
-
-            {/* Right Arrow - Hidden on mobile, always visible on desktop */}
-            {featuredProjects.length > 1 && (
-              <button
-                onClick={() => scrollCarousel("right")}
-                className="hidden sm:block absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-white/90 hover:bg-white shadow-lg rounded-full p-2 transition-all duration-300 hover:scale-110"
-                style={{ marginRight: "-20px" }}
-              >
-                <ChevronRight className="w-6 h-6 text-slate-700" />
-              </button>
-            )}
-
-            {/* Carousel Container - Simplified */}
-            <div
-              ref={setCarouselScrollRef}
-              className="overflow-x-auto hide-scrollbar scroll-smooth"
-              style={{
-                WebkitOverflowScrolling: "touch",
-                scrollbarWidth: "none",
-                msOverflowStyle: "none",
-              }}
-            >
-              <div className="flex gap-24 space-x-6 pb-4 px-2">
-                {featuredProjects.map((project) => (
-                  <div key={project.id} className="flex-shrink-0 w-80 max-w-80">
-                    <ProjectCard
-                      project={project}
-                      onLike={handleLike}
-                      isLiked={likedProjects.has(project.id)}
-                      formatTagForDisplay={formatTagForDisplay}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+    
 
       {/* All Projects Grid */}
       <div className="max-w-7xl mx-auto">
@@ -851,8 +779,8 @@ const ProjectGallery: React.FC = () => {
                 onClick={clearAllTags}
                 className={`px-3 py-2 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap ${
                   selectedTags.length === 0
-                    ? "bg-blue-600 text-white shadow-lg"
-                    : "bg-white text-slate-700 border border-slate-300 hover:border-blue-500 hover:shadow-md"
+                    ? "bg-blue-500 text-white shadow-lg"
+                    : "bg-white text-slate-700 border border-slate-300 hover:border-blue-400 hover:shadow-md"
                 }`}
               >
                 Popular
@@ -865,7 +793,7 @@ const ProjectGallery: React.FC = () => {
                   onClick={() => handleTagToggle(tag)}
                   className={`px-3 py-2 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap ${
                     selectedTags.includes(tag)
-                      ? "bg-blue-600 text-white shadow-lg"
+                      ? "bg-blue-500 text-white shadow-lg"
                       : "bg-white text-slate-700 border border-slate-300 hover:border-blue-500 hover:shadow-md"
                   }`}
                 >
@@ -962,7 +890,7 @@ const ProjectGallery: React.FC = () => {
                       setSearchQuery("");
                       clearAllTags();
                     }}
-                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                    className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
                   >
                     Show All Projects
                   </button>

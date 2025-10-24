@@ -55,7 +55,7 @@ const Navbar = () => {
 
   return (
     <nav
-      className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-6xl 
+      className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[80%] max-w-5xl 
       rounded-2xl px-8 py-4 flex items-center justify-between 
       backdrop-blur-md 
       transition-all duration-300 ${
@@ -69,12 +69,7 @@ const Navbar = () => {
           src="/puppy.png"
           alt=""
         />
-        <h1
-          className="text-3xl font-extrabold tracking-tight bg-gradient-to-r text-black
-   bg-clip-text items-center justify-center animate-gradient"
-        >
-          CodePup
-        </h1>
+     
       </div>
 
       {/* Navigation Links */}

@@ -4,9 +4,11 @@ import { Hero } from '@/components/ui/hero1'
 import React from 'react'
 import Testimonials from './Testimonials';
 import { FAQDemo } from './FAQ';
+import CodePupVideo from "./ImageSection";
 
 
 import SubscriptionCards from './subscriptionPage';
+import PartnerCarousel from './PartnerCarousel';
 
 const Home = () => {
   return (
@@ -18,9 +20,16 @@ const Home = () => {
           }
         />
       </section>
+      <section id="image">
+        <CodePupVideo />
+      </section>
+      <section id="carousel">
+        <PartnerCarousel/>
+      </section>
       <section id="gallery">
         <ProjectGallery />
       </section>
+
       <section id="testimonials">
         <Testimonials />
       </section>
