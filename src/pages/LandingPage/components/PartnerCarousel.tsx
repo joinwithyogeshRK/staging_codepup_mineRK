@@ -1,90 +1,60 @@
-import React, { useState } from "react";
+import { InfiniteSlider } from "@/components/ui/infinite-slider";
 
-const PartnerCarousel = () => {
-  const [isPaused, setIsPaused] = useState(false);
-
-  // ✅ Use correct paths from the public folder (React automatically serves these)
-  const partners = [
+export default function InfiniteSliderBasic() {
+  const logos = [
     {
-      name: "Walmart",
-      logo: "/walmart.png",
+      src: "/flipkart.jpeg",
+      alt: "Flipkart logo",
+      className: "h-[60px] w-auto rounded-3xl",
     },
     {
-      name: "Flipkart",
-      logo: "/flipkart.jpeg",
+      src: "/walmart.png",
+      alt: "Walmart logo",
+      className: "h-[60px] w-auto rounded-full",
     },
     {
-      name: "Clear",
-      logo: "/clear.jpeg",
+      src: "/clearTax1.png",
+      alt: "ClearTax logo",
+      className: "h-[60px] w-auto rounded-full", // Made size more consistent
     },
     {
-      name: "Unbox",
-      logo: "/unbox.jpeg",
+      src: "/unbox.jpeg",
+      alt: "Unbox logo",
+      className: "h-[60px] w-auto rounded-full",
     },
     {
-      name: "Ex-Zynga",
-      logo: "/ex.jpeg",
+      src: "/ex.jpeg",
+      alt: "Express logo",
+      className: "h-[60px] w-auto",
+    },
+    {
+      src: "/azure.jpeg",
+      alt: "Flipkart logo",
+      className: "h-[60px] w-auto rounded-3xl",
+    },
+    {
+      src: "/vercel.png",
+      alt: "Flipkart logo",
+      className: "h-[60px] w-auto rounded-3xl",
     },
   ];
 
-  const duplicatedPartners = [...partners, ...partners];
-
   return (
-    <section className="w-full bg-gradient-to-b from-gray-50 to-white py-14 px-4 overflow-hidden">
-      <div className="max-w-7xl mx-auto">
-        <div
-          className="relative"
-          onMouseEnter={() => setIsPaused(true)}
-          onMouseLeave={() => setIsPaused(false)}
-        >
-          {/* Gradient Edges */}
-          <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
-          <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
-
-          {/* Scrolling Track */}
-          <div className="flex overflow-hidden">
-            <div
-              className={`flex gap-16 md:gap-24 ${
-                isPaused ? "" : "animate-scroll"
-              }`}
-              style={{
-                animationPlayState: isPaused ? "paused" : "running",
-              }}
-            >
-              {duplicatedPartners.map((partner, index) => (
-                <div
-                  key={`${partner.name}-${index}`}
-                  className="flex-shrink-0 w-40 md:w-52 h-24 flex items-center justify-center grayscale hover:grayscale-0 transition-all duration-300"
-                >
-                  <img
-                    src={partner.logo}
-                    alt={partner.name}
-                    className="max-w-[100px] md:max-w-[130px] max-h-[70px] object-contain opacity-80 hover:opacity-100 hover:scale-110 transition-all duration-300"
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Animation Styles */}
-      <style jsx>{`
-        @keyframes scroll {
-          0% {
-            transform: translateX(0);
-          }
-          100% {
-            transform: translateX(-50%);
-          }
-        }
-
-        .animate-scroll {
-          animation: scroll 25s linear infinite;
-        }
-      `}</style>
-    </section>
+    <InfiniteSlider
+      gap={70} // Increased gap for breathing space
+      reverse
+      className="w-full h-full  py-8" // Softer background and padding
+      itemClassName="mx-6" // More space between logos
+    >
+      {logos.map((logo, index) => (
+        <img
+          key={index}
+          src={logo.src}
+          alt={logo.alt}
+          className={logo.className}
+          loading="lazy"
+        />
+      ))}
+    </InfiniteSlider>
   );
-};
-
-export default PartnerCarousel;
+}

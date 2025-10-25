@@ -6,9 +6,11 @@ import Testimonials from './Testimonials';
 import { FAQDemo } from './FAQ';
 import CodePupVideo from "./ImageSection";
 
-
+import InfiniteSliderBasic from './PartnerCarousel'
 import SubscriptionCards from './subscriptionPage';
-import PartnerCarousel from './PartnerCarousel';
+
+
+
 
 const Home = () => {
   return (
@@ -24,7 +26,7 @@ const Home = () => {
         <CodePupVideo />
       </section>
       <section id="carousel">
-        <PartnerCarousel/>
+        <InfiniteSliderBasic/>
       </section>
       <section id="gallery">
         <ProjectGallery />
